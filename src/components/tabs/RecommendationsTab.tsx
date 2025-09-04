@@ -3,7 +3,6 @@ import { Stars, Sparkles, Filter, Grid3X3, Grid2X2, LayoutGrid, List, Building2,
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Input } from '../ui/Input';
-import { CascadingLocationSelector } from '../ui/CascadingLocationSelector';
 import { ListingCard } from '../listing/ListingCard';
 import { EmptyState } from '../ui/EmptyState';
 import { EstimateModal } from '../modals/EstimateModal';
@@ -43,11 +42,9 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
   // Attributes form state
   const [attributesForm, setAttributesForm] = useState({
     property_type: 'apartment',
-    location: {
-      city: '',
-      town: '',
-      district_compound: ''
-    },
+    city: '',
+    town: '',
+    district_compound: '',
     bedrooms: 2,
     bathrooms: 1,
     size: 100,
@@ -82,19 +79,7 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
     try {
       const { data, savedAt } = JSON.parse(raw);
       if (Date.now() - savedAt < DRAFT_TTL) {
-        // Ensure backward compatibility with old format
-        if (data.city && !data.location) {
-          setAttributesForm({
-            ...data,
-            location: {
-              city: data.city || '',
-              town: data.town || '',
-              district_compound: data.district_compound || ''
-            }
-          });
-        } else {
-          setAttributesForm(data);
-        }
+        setAttributesForm(data);
       } else {
         localStorage.removeItem(DRAFT_KEY);
       }
@@ -254,18 +239,18 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       const normalizedLocations: { city?: string; town?: string; district_compound?: string } = {};
       
       // Normalize city
-      if (attributesForm.location.city.trim()) {
+      if (attributesForm.city.trim()) {
         try {
-          const citySuggestions = await getSingleFieldSuggestions('city', attributesForm.location.city.trim(), 3);
+          const citySuggestions = await getSingleFieldSuggestions('city', attributesForm.city.trim(), 3);
           if (citySuggestions.length > 0) {
             // Find exact match first, then fuzzy match
             const exactMatch = citySuggestions.find(city => 
-              city.toLowerCase() === attributesForm.location.city.toLowerCase()
+              city.toLowerCase() === attributesForm.city.toLowerCase()
             );
             normalizedLocations.city = exactMatch || citySuggestions[0];
-            console.log(`City: "${attributesForm.location.city}" → "${normalizedLocations.city}"`);
+            console.log(`City: "${attributesForm.city}" → "${normalizedLocations.city}"`);
           } else {
-            console.log(`City: "${attributesForm.location.city}" → NO SUGGESTION, OMITTING`);
+            console.log(`City: "${attributesForm.city}" → NO SUGGESTION, OMITTING`);
           }
         } catch (error) {
           console.warn('Failed to normalize city:', error);
@@ -273,18 +258,18 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       }
       
       // Normalize town
-      if (attributesForm.location.town.trim()) {
+      if (attributesForm.town.trim()) {
         try {
-          const townSuggestions = await getSingleFieldSuggestions('town', attributesForm.location.town.trim(), 3);
+          const townSuggestions = await getSingleFieldSuggestions('town', attributesForm.town.trim(), 3);
           if (townSuggestions.length > 0) {
             // Find exact match first, then fuzzy match
             const exactMatch = townSuggestions.find(town => 
-              town.toLowerCase() === attributesForm.location.town.toLowerCase()
+              town.toLowerCase() === attributesForm.town.toLowerCase()
             );
             normalizedLocations.town = exactMatch || townSuggestions[0];
-            console.log(`Town: "${attributesForm.location.town}" → "${normalizedLocations.town}"`);
+            console.log(`Town: "${attributesForm.town}" → "${normalizedLocations.town}"`);
           } else {
-            console.log(`Town: "${attributesForm.location.town}" → NO SUGGESTION, OMITTING`);
+            console.log(`Town: "${attributesForm.town}" → NO SUGGESTION, OMITTING`);
           }
         } catch (error) {
           console.warn('Failed to normalize town:', error);
@@ -292,18 +277,18 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       }
       
       // Normalize district_compound
-      if (attributesForm.location.district_compound.trim()) {
+      if (attributesForm.district_compound.trim()) {
         try {
-          const compoundSuggestions = await getSingleFieldSuggestions('district_compound', attributesForm.location.district_compound.trim(), 3);
+          const compoundSuggestions = await getSingleFieldSuggestions('district_compound', attributesForm.district_compound.trim(), 3);
           if (compoundSuggestions.length > 0) {
             // Find exact match first, then fuzzy match
             const exactMatch = compoundSuggestions.find(compound => 
-              compound.toLowerCase() === attributesForm.location.district_compound.toLowerCase()
+              compound.toLowerCase() === attributesForm.district_compound.toLowerCase()
             );
             normalizedLocations.district_compound = exactMatch || compoundSuggestions[0];
-            console.log(`District/Compound: "${attributesForm.location.district_compound}" → "${normalizedLocations.district_compound}"`);
+            console.log(`District/Compound: "${attributesForm.district_compound}" → "${normalizedLocations.district_compound}"`);
           } else {
-            console.log(`District/Compound: "${attributesForm.location.district_compound}" → NO SUGGESTION, OMITTING`);
+            console.log(`District/Compound: "${attributesForm.district_compound}" → NO SUGGESTION, OMITTING`);
           }
         } catch (error) {
           console.warn('Failed to normalize district_compound:', error);
@@ -607,11 +592,9 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
   const handleClearDraft = () => {
     setAttributesForm({
       property_type: 'apartment',
-      location: {
-        city: '',
-        town: '',
-        district_compound: ''
-      },
+      city: '',
+      town: '',
+      district_compound: '',
       bedrooms: 2,
       bathrooms: 1,
       size: 100,
@@ -774,10 +757,26 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
               </select>
             </div>
 
-            <CascadingLocationSelector
-              value={attributesForm.location}
-              onChange={(location) => setAttributesForm(prev => ({ ...prev, location }))}
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Input
+                label={t('city', state.language)}
+                value={attributesForm.city}
+                onChange={(e) => setAttributesForm(prev => ({ ...prev, city: e.target.value }))}
+                placeholder="e.g., Cairo"
+              />
+              <Input
+                label={t('town', state.language)}
+                value={attributesForm.town}
+                onChange={(e) => setAttributesForm(prev => ({ ...prev, town: e.target.value }))}
+                placeholder="e.g., New Cairo"
+              />
+              <Input
+                label={t('compound', state.language)}
+                value={attributesForm.district_compound}
+                onChange={(e) => setAttributesForm(prev => ({ ...prev, district_compound: e.target.value }))}
+                placeholder="e.g., Madinaty"
+              />
+            </div>
 
             <div className="grid grid-cols-3 gap-3">
               <Input
