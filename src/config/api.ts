@@ -20,7 +20,7 @@ export const API_ENDPOINTS = {
 } as const;
 
 // Request timeout in milliseconds
-export const REQUEST_TIMEOUT = 12000;
+export const REQUEST_TIMEOUT = 30000;
 
 export const RETRY_CONFIG = {
   maxRetries: 2,
