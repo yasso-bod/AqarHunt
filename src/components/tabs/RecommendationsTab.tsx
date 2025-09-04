@@ -96,6 +96,7 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
   const [availableListings, setAvailableListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingListings, setLoadingListings] = useState(true);
+  const [recommendationError, setRecommendationError] = useState<string | null>(null);
   const [showEstimateModal, setShowEstimateModal] = useState(false);
   const [estimatedPrice, setEstimatedPrice] = useState<number | null>(null);
   // Recommendations-specific filters (isolated from other tabs)
@@ -308,6 +309,8 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
     try {
       setLoading(true);
       setRecommendationType(type);
+      setRecommendations([]);
+      setRecommendationError(null);
       
       if (type === 'similar') {
         const recResponse = await api.recLive({ property_id: selectedListingId, top_k: 10 });
@@ -420,8 +423,7 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
         const seedFilters = buildSeedFilters(attributesForm);
         let seedId = await pickSeedId(seedFilters);
         if (!seedId) {
-          setRecommendationError(t('noSimilarPropertiesFound', state.language));
-          setLoadingRecommendations(false);
+          setRecommendationError('No similar properties found to use as a reference. Try adjusting your search criteria.');
           return;
         }
 
@@ -439,7 +441,7 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
 
         const ids = (recResp?.items || []).map((x:any) => String(x.property_id));
         if (!ids.length) {
-          setRecommendationError(t('noSimilarPropertiesFound', state.language));
+          setRecommendationError('No similar properties found. Try adjusting your search criteria.');
           setRecommendations([]);
         } else {
           const details = await Promise.all(ids.map((id:string) =>
@@ -452,8 +454,7 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
         const seedFilters = buildSeedFilters(attributesForm);
         let seedId = await pickSeedId(seedFilters);
         if (!seedId) {
-          setRecommendationError(t('noSimilarPropertiesFound', state.language));
-          setLoadingRecommendations(false);
+          setRecommendationError('No similar properties found to use as a reference. Try adjusting your search criteria.');
           return;
         }
 
@@ -547,11 +548,7 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       if (fetchedRecommendations.length === 0) {
         console.log('No filtered recommendations found');
         setRecommendations([]);
-        showToast({
-          type: 'info',
-          title: 'No similar properties found with current filters',
-          message: 'Try using "Similar (Live)" instead or adjust your criteria.',
-        });
+        setRecommendationError('No similar properties found with current filters. Try using "Similar (Live)" instead or adjust your criteria.');
         return;
       }
       
@@ -600,13 +597,11 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       
     } catch (error) {
       console.error('=== RECOMMENDATION ERROR ===', error);
-      showToast({
-        type: 'error',
-        title: 'Recommendations Not Available',
-        message: error instanceof Error && error.message.includes('No vector found') 
+      setRecommendationError(
+        error instanceof Error && error.message.includes('No vector found') 
           ? 'Recommendations are not available for this property combination. Try adjusting your search criteria.'
-          : 'Failed to get recommendations. Please try again later.',
-      });
+          : 'Failed to get recommendations. Please try again later.'
+      );
       setRecommendations([]);
     } finally {
       setLoading(false);
@@ -627,6 +622,11 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       });
       return;
     }
+
+    setLoading(true);
+    setRecommendationType(type);
+    setRecommendations([]);
+    setRecommendationError(null);
 
     setAttributesRecommendationType(type);
     await handleGetRecommendationsByAttributes();
@@ -947,6 +947,17 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
             </Button>
           </div>
         </Card>
+      )}
+
+      {/* Error Display */}
+      {recommendationError && (
+        <div className="mt-3">
+          <EmptyState
+            icon={<Stars className="w-full h-full" />}
+            title="Unable to Load Recommendations"
+            description={recommendationError}
+          />
+        </div>
       )}
 
       {/* Recommendations Results */}
