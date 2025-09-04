@@ -150,6 +150,16 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     // Saved Properties Actions
     remove: 'Remove',
     selectAll: 'Select All',
+    
+    // Map Tab
+    propertiesFound: 'properties found',
+    
+    // Recommendations Tab
+    describeYourProperty: 'Describe your property',
+    useExistingListing: 'Use existing listing',
+    similarWithinFilters: 'Similar within Filters',
+    similarLive: 'Similar (Live)',
+    fillPropertyDetailsForRecommendations: 'Fill in the property details above to get AI-powered recommendations',
   },
   ar: {
     // Navigation
@@ -370,6 +380,16 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     // Saved Properties Actions
     remove: 'حذف',
     selectAll: 'تحديد الكل',
+    
+    // Map Tab
+    propertiesFound: 'عقار تم العثور عليه',
+    
+    // Recommendations Tab
+    describeYourProperty: 'وصف العقار الخاص بك',
+    useExistingListing: 'استخدام إعلان موجود',
+    similarWithinFilters: 'مشابه ضمن المرشحات',
+    similarLive: 'مشابه (مباشر)',
+    fillPropertyDetailsForRecommendations: 'املأ تفاصيل العقار أعلاه للحصول على توصيات مدعومة بالذكاء الاصطناعي',
   }
 };
 

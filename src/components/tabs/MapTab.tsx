@@ -145,7 +145,7 @@ export function MapTab({ onViewListing, onBack }: MapTabProps) {
         <div className="mt-3 flex items-center text-light-text dark:text-dark-text">
           <MapPin className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2 text-light-primary" />
           <span className="text-sm font-medium">
-            {loading ? 'Loading...' : `${totalCount} properties found`}
+            {loading ? 'Loading...' : `${totalCount} ${t('propertiesFound', state.language)}`}
           </span>
         </div>
       </div>

@@ -578,7 +578,7 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
             }`}
           >
             <Building2 className="w-4 h-4" />
-            <span className="font-medium">Use existing listing</span>
+            <span className="font-medium">{t('useExistingListing', state.language)}</span>
           </button>
           <button
             onClick={() => setMode('attributes')}
@@ -589,7 +589,7 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
             }`}
           >
             <Edit3 className="w-4 h-4" />
-            <span className="font-medium">Describe your property</span>
+            <span className="font-medium">{t('describeYourProperty', state.language)}</span>
           </button>
         </div>
       </Card>
@@ -647,7 +647,7 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
         <Card className="p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-light-text dark:text-dark-text">
-              Describe your property
+              {t('describeYourProperty', state.language)}
             </h3>
             <Button
               variant="outline"
@@ -809,7 +809,7 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
               className="flex-1"
             >
               <Sparkles className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-              {loading && attributesRecommendationType === 'similar' ? 'Loading...' : 'Similar (Live)'}
+              {loading && attributesRecommendationType === 'similar' ? 'Loading...' : t('similarLive', state.language)}
             </Button>
             <Button
               variant={attributesRecommendationType === 'filtered' ? 'gradient' : 'outline'}
@@ -818,7 +818,7 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
               className="flex-1"
             >
               <Filter className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-              {loading && attributesRecommendationType === 'filtered' ? 'Loading...' : 'Similar within Filters'}
+              {loading && attributesRecommendationType === 'filtered' ? 'Loading...' : t('similarWithinFilters', state.language)}
             </Button>
           </div>
         </Card>
@@ -895,8 +895,8 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       {mode === 'attributes' && recommendations.length === 0 && !loading && recommendationType === null && (
         <EmptyState
           icon={<WandSparkles className="w-full h-full" />}
-          title="Describe Your Property"
-          description="Fill in the property details above to get AI-powered recommendations"
+          title={t('describeYourProperty', state.language)}
+          description={t('fillPropertyDetailsForRecommendations', state.language)}
         />
       )}
 
