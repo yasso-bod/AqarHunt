@@ -88,6 +88,12 @@ export const translations = {
     privacy: 'Privacy Policy',
     terms: 'Terms of Service',
     
+    // Profile page content
+    welcomeToAqarHunt: 'Welcome to AqarHunt',
+    realEstateCompanion: 'Your real estate companion for Egypt',
+    settings: 'Settings',
+    information: 'Information',
+    
     // Common
     egp: 'EGP',
     br: 'BR',
@@ -301,6 +307,12 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     about: 'حول عقار هنت',
     privacy: 'سياسة الخصوصية',
     terms: 'شروط الخدمة',
+    
+    // Profile page content
+    welcomeToAqarHunt: 'مرحباً بك في عقار هنت',
+    realEstateCompanion: 'رفيقك العقاري في مصر',
+    settings: 'الإعدادات',
+    information: 'المعلومات',
     
     // Common
     egp: 'ج.م',

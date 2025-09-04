@@ -8,30 +8,14 @@ import { cn } from '../../utils/cn';
 
 // Helper function to translate city names
 const translateCity = (city: string, language: string) => {
-  const cityMap: { [key: string]: string } = {
-    'Cairo': language === 'ar' ? 'القاهرة' : 'Cairo',
-    'Giza': language === 'ar' ? 'الجيزة' : 'Giza',
-    'Alexandria': language === 'ar' ? 'الإسكندرية' : 'Alexandria',
-  };
-  return cityMap[city] || city;
+  // Revert to English for all locations until proper Arabic localization is implemented
+  return city;
 };
 
 // Helper function to translate town/area names
 const translateTown = (town: string, language: string) => {
-  const townMap: { [key: string]: string } = {
-    'New Cairo': language === 'ar' ? 'القاهرة الجديدة' : 'New Cairo',
-    'Heliopolis': language === 'ar' ? 'مصر الجديدة' : 'Heliopolis',
-    'Maadi': language === 'ar' ? 'المعادي' : 'Maadi',
-    'Zamalek': language === 'ar' ? 'الزمالك' : 'Zamalek',
-    'Dokki': language === 'ar' ? 'الدقي' : 'Dokki',
-    'Mohandessin': language === 'ar' ? 'المهندسين' : 'Mohandessin',
-    'Nasr City': language === 'ar' ? 'مدينة نصر' : 'Nasr City',
-    'Downtown': language === 'ar' ? 'وسط البلد' : 'Downtown',
-    'Agouza': language === 'ar' ? 'العجوزة' : 'Agouza',
-    '6th of October': language === 'ar' ? 'مدينة السادس من أكتوبر' : '6th of October',
-    'Sheikh Zayed': language === 'ar' ? 'الشيخ زايد' : 'Sheikh Zayed',
-  };
-  return townMap[town] || town;
+  // Revert to English for all locations until proper Arabic localization is implemented
+  return town;
 };
 
 // Helper function to translate offering type

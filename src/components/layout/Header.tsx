@@ -44,11 +44,16 @@ export function Header({ onProfileClick, onLogoClick }: HeaderProps) {
             className="px-3 hover:scale-105 transition-transform"
           >
             {state.theme === 'light' ? (
-              <Moon className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
+              <>
+                <Moon className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
+                {state.language === 'ar' ? 'داكن' : 'Dark'}
+              </>
             ) : (
-              <Sun className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
+              <>
+                <Sun className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
+                {state.language === 'ar' ? 'فاتح' : 'Light'}
+              </>
             )}
-            {state.theme === 'light' ? 'Dark' : 'Light'}
           </Button>
 
           {/* Language Toggle */}
