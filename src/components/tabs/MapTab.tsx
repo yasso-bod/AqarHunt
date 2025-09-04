@@ -32,6 +32,7 @@ export function MapTab({ onViewListing, onBack }: MapTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
   // Map-specific filters (isolated from other tabs)
   const [mapFilters, setMapFilters] = useState<SearchFilters>({});
 
@@ -60,9 +61,10 @@ export function MapTab({ onViewListing, onBack }: MapTabProps) {
   const loadListings = async () => {
     try {
       setLoading(true);
-      const response = await searchListings(mapFilters, 1, 100);
+      const response = await searchListings(mapFilters, 1, 1000); // Increase limit to get more comprehensive results
       
       setListings(response.items);
+      setTotalCount(response.count || response.items.length);
     } catch (error) {
       console.error('Failed to load listings:', error);
       showToast({
@@ -116,7 +118,7 @@ export function MapTab({ onViewListing, onBack }: MapTabProps) {
         <div className="mt-3 flex items-center text-light-text dark:text-dark-text">
           <MapPin className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2 text-light-primary" />
           <span className="text-sm font-medium">
-            {loading ? 'Loading...' : `${listings.length} properties found`}
+            {loading ? 'Loading...' : `${totalCount} properties found`}
           </span>
         </div>
       </div>
