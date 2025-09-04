@@ -13,6 +13,48 @@ import { api } from '../../utils/api';
 import { useToast } from '../ui/Toast';
 import { Listing } from '../../types';
 
+// --- helpers used by the Attributes flow ---
+const mapType = (v?: string) => {
+  const M: Record<string, string> = {
+    apartment: 'Apartment',
+    villa: 'Villa',
+    townhouse: 'Townhouse',
+    duplex: 'Duplex',
+    penthouse: 'Penthouse',
+    studio: 'Studio',
+    'twin_house': 'Twin House',
+    chalet: 'Chalet',
+    'standalone_villa': 'Standalone Villa',
+  };
+  return v ? (M[v.toLowerCase()] ?? v) : undefined;
+};
+const mapOffering = (v?: string) => v ? (v.toLowerCase() === 'rent' ? 'Rent' : 'Sale') : undefined;
+// Many datasets store this as "Yes/No" rather than "Furnished". Send both keys to be safe.
+const mapFurnishedYN = (b?: boolean) => b === undefined ? undefined : (b ? 'Yes' : 'No');
+const clean = (o: any) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== ''));
+
+// Snap free-text to DB strings using /suggest_fuzzy so "Gi" → "Giza", "6 Oct" → "6 October"
+async function snapToDbStrings(form: any) {
+  const pick = (arr: string[] | undefined) => (arr && arr.length ? arr[0] : undefined);
+  try {
+    const [c, t, d] = await Promise.all([
+      form.city ? api.suggestFuzzy({ field: 'city', q: form.city, limit: 1 }) : Promise.resolve([]),
+      form.town ? api.suggestFuzzy({ field: 'town', q: form.town, limit: 1 }) : Promise.resolve([]),
+      form.district_compound
+        ? api.suggestFuzzy({ field: 'district_compound', q: form.district_compound, limit: 1 })
+        : Promise.resolve([]),
+    ]);
+    return {
+      ...form,
+      city: pick(c) ?? form.city,
+      town: pick(t) ?? form.town,
+      district_compound: pick(d) ?? form.district_compound,
+    };
+  } catch {
+    return form; // graceful fallback if suggest_fuzzy fails
+  }
+}
+
 interface RecommendationsTabProps {
   onViewListing: (listingId: string) => void;
 }
