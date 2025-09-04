@@ -163,6 +163,29 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     
     // Map popup
     viewFullDetails: 'View Full Details',
+    
+    // Property Details Elements
+    message: 'Message',
+    call: 'Call',
+    size: 'Size',
+    bathrooms: 'Bathrooms',
+    bedrooms: 'Bedrooms',
+    floor: 'Floor',
+    balcony: 'Balcony',
+    garden: 'Garden',
+    parking: 'Parking',
+    elevator: 'Elevator',
+    security: 'Security',
+    gym: 'Gym',
+    pool: 'Pool',
+    view: 'View',
+    features: 'Features',
+    amenities: 'Amenities',
+    description: 'Description',
+    location: 'Location',
+    contact: 'Contact',
+    seller: 'Seller',
+    agent: 'Agent',
   },
   ar: {
     // Navigation
@@ -396,6 +419,29 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     
     // Map popup
     viewFullDetails: 'عرض التفاصيل الكاملة',
+    
+    // Property Details Elements
+    message: 'رسالة',
+    call: 'اتصال',
+    size: 'المساحة',
+    bathrooms: 'دورات المياه',
+    bedrooms: 'غرف النوم',
+    floor: 'الطابق',
+    balcony: 'شرفة',
+    garden: 'حديقة',
+    parking: 'موقف سيارات',
+    elevator: 'مصعد',
+    security: 'أمن',
+    gym: 'صالة رياضية',
+    pool: 'حمام سباحة',
+    view: 'إطلالة',
+    features: 'المميزات',
+    amenities: 'المرافق',
+    description: 'الوصف',
+    location: 'الموقع',
+    contact: 'تواصل',
+    seller: 'البائع',
+    agent: 'الوسيط',
   }
 };
 

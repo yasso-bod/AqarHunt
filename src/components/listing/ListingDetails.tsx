@@ -247,21 +247,21 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
               <div className="flex items-center justify-center mb-2">
                 <Bed className="w-5 h-5 text-light-primary dark:text-dark-text" />
               </div>
-              <p className="text-sm text-light-text/70 dark:text-dark-muted">Bedrooms</p>
+              <p className="text-sm text-light-text/70 dark:text-dark-muted">{t('bedrooms', state.language)}</p>
               <p className="font-semibold text-light-text dark:text-dark-text">{listing.bedrooms}</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center mb-2">
                 <Bath className="w-5 h-5 text-light-primary dark:text-dark-text" />
               </div>
-              <p className="text-sm text-light-text/70 dark:text-dark-muted">Bathrooms</p>
+              <p className="text-sm text-light-text/70 dark:text-dark-muted">{t('bathrooms', state.language)}</p>
               <p className="font-semibold text-light-text dark:text-dark-text">{listing.bathrooms}</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center mb-2">
                 <Ruler className="w-5 h-5 text-light-primary dark:text-dark-text" />
               </div>
-              <p className="text-sm text-light-text/70 dark:text-dark-muted">Size</p>
+              <p className="text-sm text-light-text/70 dark:text-dark-muted">{t('size', state.language)}</p>
               <p className="font-semibold text-light-text dark:text-dark-text">{listing.size}{t('squareMeters', state.language)}</p>
             </div>
           </div>
@@ -317,11 +317,11 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
           <div className="grid grid-cols-2 gap-3">
             <Button variant="outline" className="flex items-center justify-center">
               <Phone className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-              Call
+              {t('call', state.language)}
             </Button>
             <Button variant="outline" className="flex items-center justify-center">
               <MessageCircle className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-              Message
+              {t('message', state.language)}
             </Button>
           </div>
         </Card>
