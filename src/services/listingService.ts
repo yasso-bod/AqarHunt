@@ -255,8 +255,51 @@ export async function getRecommendationsByPropertyLive(
   propertyId: string,
   topK = 10
 ): Promise<Listing[]> {
-  const response = await api.recLive({ property_id: propertyId, top_k: topK });
-  return response.items || [];
+  try {
+    console.log(`Getting recommendations for property ${propertyId} with topK=${topK}`);
+    
+    // Step 1: Get recommendation IDs from the API
+    const response = await api.recLive({ property_id: propertyId, top_k: topK });
+    console.log('Raw recommendations response:', response);
+    
+    // Extract property IDs from recommendation response
+    const propertyIds = response.items?.map((item: any) => String(item.property_id)) || [];
+    console.log('Extracted property IDs:', propertyIds);
+    
+    if (propertyIds.length === 0) {
+      console.log('No property IDs returned from recommendations');
+      return [];
+    }
+    
+    // Step 2: Fetch full listing details for each recommended property
+    const detailsPromises = propertyIds.map(async (id: string) => {
+      try {
+        console.log(`Fetching full details for property ${id}`);
+        const listing = await getListing(id);
+        console.log(`Successfully loaded listing ${id}:`, {
+          id: listing.id,
+          property_type: listing.property_type,
+          bedrooms: listing.bedrooms,
+          size: listing.size,
+          price: listing.price
+        });
+        return listing;
+      } catch (error) {
+        console.warn(`Failed to load details for listing ${id}:`, error);
+        return null;
+      }
+    });
+    
+    const fullListings = await Promise.all(detailsPromises);
+    const validListings = fullListings.filter(Boolean) as Listing[];
+    
+    console.log(`Returning ${validListings.length} valid similar listings`);
+    return validListings;
+    
+  } catch (error) {
+    console.error('Error in getRecommendationsByPropertyLive:', error);
+    throw error;
+  }
 }
 
 // Get recommendations within filters (live)

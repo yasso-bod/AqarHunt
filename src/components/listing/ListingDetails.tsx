@@ -80,8 +80,38 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
       setLoadingSimilar(true);
       setSimilarPropertiesRequested(true);
       
-      // Call the recommendations API with current property details
-      loadSimilarListings();
+      console.log('=== LOADING SIMILAR PROPERTIES ===');
+      console.log('Current listing:', {
+        id: listing.id,
+        property_type: listing.property_type,
+        city: listing.city,
+        bedrooms: listing.bedrooms,
+        size: listing.size
+      });
+      
+      // Use the improved recommendations service
+      const similarProperties = await getRecommendationsByPropertyLive(listing.id, 6);
+      
+      console.log('Similar properties loaded:', similarProperties.length);
+      if (similarProperties.length > 0) {
+        console.log('Sample similar property:', {
+          id: similarProperties[0].id,
+          property_type: similarProperties[0].property_type,
+          bedrooms: similarProperties[0].bedrooms,
+          size: similarProperties[0].size,
+          price: similarProperties[0].price
+        });
+      }
+      
+      setSimilarListings(similarProperties);
+      
+      if (similarProperties.length === 0) {
+        showToast({
+          type: 'info',
+          title: 'No similar properties found',
+          message: 'We couldn\'t find properties similar to this one at the moment.',
+        });
+      }
     } catch (error) {
       console.error('Failed to load similar properties:', error);
       showToast({
@@ -118,11 +148,50 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
     if (!listing) return;
     
     try {
-      // Use the recommendations API with current property as seed
-      const similar = await getRecommendationsByPropertyLive(listing.id, 6);
-      setSimilarListings(similar);
+      console.log('Loading similar properties for listing:', listing.id);
       
-      if (similar.length === 0) {
+      // First try the live recommendations API
+      const recResponse = await api.recLive({ property_id: listing.id, top_k: 10 });
+      console.log('Recommendations API response:', recResponse);
+      
+      // Extract property IDs from recommendation response
+      const propertyIds = recResponse.items?.map((item: any) => String(item.property_id)) || [];
+      console.log('Property IDs from recommendations:', propertyIds);
+      
+      if (propertyIds.length === 0) {
+        console.log('No property IDs returned from recommendations API');
+        setSimilarListings([]);
+        showToast({
+          type: 'info',
+          title: 'No similar properties found',
+          message: 'We couldn\'t find properties similar to this one at the moment.',
+        });
+        return;
+      }
+      
+      // Fetch full listing details for each recommended property
+      console.log('Fetching details for recommended properties...');
+      const detailsPromises = propertyIds.slice(0, 6).map(async (id: string) => {
+        try {
+          console.log(`Fetching details for property ${id}`);
+          const propertyDetails = await getListing(id);
+          console.log(`Successfully loaded property ${id}:`, propertyDetails);
+          return propertyDetails;
+        } catch (error) {
+          console.warn(`Failed to load details for listing ${id}:`, error);
+          return null;
+        }
+      });
+      
+      const fullListings = await Promise.all(detailsPromises);
+      const validListings = fullListings.filter(Boolean) as Listing[];
+      
+      console.log('Valid similar listings loaded:', validListings.length);
+      console.log('Sample listing data:', validListings[0]);
+      
+      setSimilarListings(validListings);
+      
+      if (validListings.length === 0) {
         showToast({
           type: 'info',
           title: 'No similar properties found',
@@ -363,6 +432,11 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
           <div className="space-y-4">
             <h3 className="text-h2 font-semibold text-light-text dark:text-dark-text">
               {t('similarProperties', state.language)}
+              {similarListings.length > 0 && (
+                <span className="text-sm font-normal text-light-text/70 dark:text-dark-muted ml-2">
+                  ({similarListings.length} found)
+                </span>
+              )}
             </h3>
             
             {loadingSimilar ? (
@@ -373,10 +447,17 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
                 </div>
               </div>
             ) : similarListings.length > 0 ? (
-              <RecommendationCarousel
-                listings={similarListings}
-                onViewListing={onViewListing}
-              />
+              <div className="space-y-4">
+                <RecommendationCarousel
+                  listings={similarListings}
+                  onViewListing={onViewListing}
+                />
+                <div className="text-center">
+                  <p className="text-sm text-light-text/70 dark:text-dark-muted">
+                    Showing properties similar to this {listing.property_type} in {listing.city}
+                  </p>
+                </div>
+              </div>
             ) : (
               <div className="text-center py-8">
                 <div className="w-16 h-16 mx-auto mb-4 text-light-primary-400 dark:text-dark-muted">
@@ -384,6 +465,9 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
                 </div>
                 <p className="text-light-text/70 dark:text-dark-muted">
                   No similar properties found at the moment.
+                </p>
+                <p className="text-sm text-light-text/50 dark:text-dark-muted/70 mt-2">
+                  Try viewing other properties or check back later.
                 </p>
               </div>
             )}
