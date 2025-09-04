@@ -19,7 +19,6 @@ export const API_ENDPOINTS = {
   recommendWithinFiltersLive: '/recommend/within_filters_live',
   recommendByAttributesLive: '/recommend/by_attributes_live',
   recommendWithinFiltersByAttributesLive: '/recommend/within_filters_by_attributes_live',
-  suggestFuzzy: '/suggest_fuzzy',
 } as const;
 
 // Request timeout in milliseconds
