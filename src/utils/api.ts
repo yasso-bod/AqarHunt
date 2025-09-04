@@ -111,9 +111,10 @@ export async function apiRequest<T>(
     return fetchJSON(endpoint, { ...options, headers: {} });
   }
   return fetchJSON(endpoint, options);
-}
-
-suggestFuzzy: ({ field, q, limit = 10 }: { field: string; q: string; limit?: number }) =>
+  
+  suggestFuzzy: ({ field, q, limit = 10 }: { field: string; q: string; limit?: number }) =>
   fetchJSON(`/suggest_fuzzy?field=${encodeURIComponent(field)}&q=${encodeURIComponent(q)}&limit=${limit}`, {
     method: "GET",
   }),
+}
+
