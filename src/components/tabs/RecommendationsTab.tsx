@@ -16,7 +16,9 @@ import { api } from '../../utils/api';
 import { useToast } from '../ui/Toast';
 import { Listing } from '../../types';
 
-// --- helpers: mapping to API schema (match backend exact strings)
+/* ===================== Helpers ===================== */
+
+// map to exact DB strings
 const mapType = (t?: string) => {
   const M: Record<string, string> = {
     apartment: "Apartment",
@@ -32,58 +34,30 @@ const mapType = (t?: string) => {
   return t ? (M[t.toLowerCase()] ?? t) : undefined;
 };
 const mapOffering = (o?: string) => (o ? (o.toLowerCase() === "rent" ? "Rent" : "Sale") : undefined);
+// filters use furnished Yes/No
 const mapFurnished = (b?: boolean) => (b === undefined ? undefined : b ? "Yes" : "No");
-const clean = (o: any) => Object.fromEntries(Object.entries(o).filter(([_, v]) => v !== undefined && v !== null && v !== ""));
-async function snapToDbStrings<T>(form: T): Promise<T> { return form; }
+// by-attributes endpoint uses furnishing string
+const mapFurnishingFromBool = (b?: boolean) =>
+  b === undefined ? undefined : (b ? "Furnished" : "Unfurnished");
 
-function buildAttrsPayload(form: any) {
-  return clean({
-    property_type: mapType(form.property_type),
-    city: form.city,
-    town: form.town,
-    district_compound: form.district_compound || undefined,
-    bedrooms: form.bedrooms || undefined,
-    bathrooms: form.bathrooms || undefined,
-    size: form.size || undefined,
-    furnished: mapFurnished(form.furnished),
-    offering_type: mapOffering(form.offering_type),
-    price: form.price ? Number(form.price) : undefined,
-  });
-}
-
-function buildFiltersFromForm(form: any) {
-  const size = Number(form.size) || undefined;
-  const price = Number(form.price) || undefined;
-  return clean({
-    city: form.city,
-    town: form.town,
-    district_compound: form.district_compound || undefined,
-    property_type: mapType(form.property_type),
-    bedrooms_min: form.bedrooms || undefined,
-    bathrooms_min: form.bathrooms || undefined,
-    size_min: size ? Math.round(size * 0.8) : undefined,
-    size_max: size ? Math.round(size * 1.2) : undefined,
-    price_min: price ? Math.round(price * 0.75) : undefined,
-    price_max: price ? Math.round(price * 1.25) : undefined,
-    furnished: mapFurnished(form.furnished),
-    offering_type: mapOffering(form.offering_type),
-  });
-}
-
+const clean = (o: any) =>
+  Object.fromEntries(Object.entries(o).filter(([_, v]) => v !== undefined && v !== null && v !== ""));
 
 // snap free-text to DB strings using suggest_fuzzy
 async function snapToDbStrings(form: any) {
   const pick = (arr: string[] | undefined) => (arr && arr.length ? arr[0] : undefined);
   try {
-    const [c, t, d] = await Promise.all([
-      form.city ? api.suggestFuzzy({ field:'city', q: form.city, limit: 1 }) : Promise.resolve([]),
-      form.town ? api.suggestFuzzy({ field:'town', q: form.town, limit: 1 }) : Promise.resolve([]),
-      form.district_compound ? api.suggestFuzzy({ field:'district_compound', q: form.district_compound, limit: 1 }) : Promise.resolve([]),
+    const [c, twn, d] = await Promise.all([
+      form.city ? api.suggestFuzzy({ field: 'city', q: form.city, limit: 1 }) : Promise.resolve([]),
+      form.town ? api.suggestFuzzy({ field: 'town', q: form.town, limit: 1 }) : Promise.resolve([]),
+      form.district_compound
+        ? api.suggestFuzzy({ field: 'district_compound', q: form.district_compound, limit: 1 })
+        : Promise.resolve([]),
     ]);
     return {
       ...form,
       city: pick(c) ?? form.city,
-      town: pick(t) ?? form.town,
+      town: pick(twn) ?? form.town,
       district_compound: pick(d) ?? form.district_compound,
     };
   } catch {
@@ -91,8 +65,9 @@ async function snapToDbStrings(form: any) {
   }
 }
 
-interface RecommendationsTabProps { onViewListing: (listingId: string) => void; }
+/* ===================== Component ===================== */
 
+interface RecommendationsTabProps { onViewListing: (listingId: string) => void; }
 type ViewMode = 'large' | 'medium' | 'small' | 'list';
 type RecommendationMode = 'existing' | 'attributes';
 
@@ -112,10 +87,10 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
   const [showEstimateModal, setShowEstimateModal] = useState(false);
   const [estimatedPrice, setEstimatedPrice] = useState<number | null>(null);
 
-  // Rec tab local filters (used only for "Similar within Filters" in existing-listing mode)
+  // local filters for "Similar within Filters" in existing-listing mode
   const [recsFilters, setRecsFilters] = useState<SearchFilters>({});
 
-  // Attributes form
+  // form state for "Describe your property"
   const [attributesForm, setAttributesForm] = useState({
     property_type: 'apartment',
     city: '',
@@ -130,7 +105,7 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
     price: '',
   });
 
-  // -------- Draft autosave for "Describe your property"
+  // draft autosave
   const DRAFT_KEY = 'draft.recs.describe.v1';
   const DRAFT_TTL = 24 * 60 * 60 * 1000;
 
@@ -154,22 +129,26 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
     }
   }, []);
 
-  // Load a small list for the "Use existing listing" dropdown
+  // preload a few items for the "use existing listing" dropdown
   React.useEffect(() => { loadAvailableListings(); }, []);
   async function loadAvailableListings() {
     try {
       setLoadingListings(true);
       const res = await searchListings({ limit: 50, page: 1 });
       setAvailableListings(res.items || []);
-    } catch (e:any) {
+    } catch (e: any) {
       console.error('Failed to load listings:', e);
-      showToast({ type: 'error', title: 'Failed to load listings', message: e?.message || 'Please try again' });
+      showToast({
+        type: 'error',
+        title: 'Failed to load listings',
+        message: e?.message || 'Please try again',
+      });
     } finally {
       setLoadingListings(false);
     }
   }
 
-  // -------- EXISTING LISTING FLOW
+  /* ========== Existing listing flow ========== */
   async function handleGetRecommendations(type: 'similar' | 'filtered') {
     if (!selectedListingId) return;
     try {
@@ -180,8 +159,8 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
 
       if (type === 'similar') {
         const rec = await api.recLive({ property_id: selectedListingId, top_k: 12 });
-        const ids = (rec?.items || []).map((x:any) => String(x.property_id));
-        const details = await Promise.all(ids.map((id:string) => getListing(id).catch(() => null)));
+        const ids = (rec?.items || []).map((x: any) => String(x.property_id));
+        const details = await Promise.all(ids.map((id: string) => getListing(id).catch(() => null)));
         setRecommendations(details.filter(Boolean) as Listing[]);
       } else {
         const filters: any = {};
@@ -197,16 +176,16 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
         if (recsFilters.offering_type) filters.offering_type = mapOffering(recsFilters.offering_type);
 
         const rec = await api.recWithinLive({ property_id: selectedListingId, top_k: 12, filters });
-        const ids = (rec?.items || []).map((x:any) => String(x.property_id));
+        const ids = (rec?.items || []).map((x: any) => String(x.property_id));
         if (!ids.length) {
           setRecommendations([]);
           setRecommendationError('No results under current filters. Try relaxing filters.');
           return;
         }
-        const details = await Promise.all(ids.map((id:string) => getListing(id).catch(() => null)));
+        const details = await Promise.all(ids.map((id: string) => getListing(id).catch(() => null)));
         setRecommendations(details.filter(Boolean) as Listing[]);
       }
-    } catch (e:any) {
+    } catch (e: any) {
       console.error('Failed to get recommendations:', e);
       setRecommendationError(e?.message || 'Failed to get recommendations.');
       setRecommendations([]);
@@ -215,9 +194,8 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
     }
   }
 
-  // -------- ATTRIBUTES FLOW (NEW: uses your new endpoints directly)
+  /* ========== Attributes flow (uses new backend endpoints) ========== */
   async function handleGetRecommendationsByAttributesWithType(type: 'similar' | 'filtered') {
-    // Require minimal inputs
     if (!attributesForm.city || !attributesForm.town || !attributesForm.property_type) {
       showToast({
         type: 'warning',
@@ -233,30 +211,28 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
     setRecommendationError(null);
 
     try {
-      // Snap to DB strings first to avoid typos
       const snapped = await snapToDbStrings(attributesForm);
 
-      // Build attributes payload expected by backend (vectorize-like keys)
+      // Attributes payload for /recommend/by_attributes_live
       const attrs = clean({
         city: snapped.city,
         town: snapped.town,
         district_compound: snapped.district_compound || undefined,
         property_type: mapType(snapped.property_type),
-        furnishing: mapFurnishingFromBool(snapped.furnished),      // string
+        furnishing: mapFurnishingFromBool(snapped.furnished),
         completion_status: snapped.completion_status ? String(snapped.completion_status) : undefined,
         offering_type: mapOffering(snapped.offering_type),
         bedrooms: snapped.bedrooms || undefined,
         bathrooms: snapped.bathrooms || undefined,
         size: snapped.size || undefined,
-        // optional extras if you have them in UI:
-        // floor, age_years, lat, lon, down_payment_price, amenities
+        // optional extras if available in your UI: floor, age_years, lat, lon, down_payment_price, amenities
       });
 
       let ids: string[] = [];
 
       if (type === 'similar') {
         const rec = await api.recByAttrs({ ...attrs, top_k: 12 });
-        ids = (rec?.items || []).map((x:any) => String(x.property_id));
+        ids = (rec?.items || []).map((x: any) => String(x.property_id));
       } else {
         const size = Number(snapped.size) || undefined;
         const price = Number(snapped.price) || undefined;
@@ -272,23 +248,22 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
           size_max: size ? Math.round(size * 1.2) : undefined,
           price_min: price ? Math.round(price * 0.75) : undefined,
           price_max: price ? Math.round(price * 1.25) : undefined,
-          // furnished/offering_type can be added if your DB is consistent for these columns:
-          // furnished: snapped.furnished ? 'Yes' : 'No',
-          // offering_type: mapOffering(snapped.offering_type),
+          furnished: mapFurnished(snapped.furnished),
+          offering_type: mapOffering(snapped.offering_type),
         });
 
-        // Try strict → relax a bit if nothing returned
+        // strict → progressively relax
         const relaxers = [
-          (f:any) => f,
-          (f:any) => clean({ ...f, district_compound: undefined }),
-          (f:any) => clean({ ...f, bedrooms_min: undefined, bathrooms_min: undefined }),
-          (f:any) => clean({ ...f, town: undefined }),
+          (f: any) => f,
+          (f: any) => clean({ ...f, district_compound: undefined }),
+          (f: any) => clean({ ...f, bedrooms_min: undefined, bathrooms_min: undefined }),
+          (f: any) => clean({ ...f, town: undefined }),
         ];
 
         for (const fn of relaxers) {
           const f = fn(filters);
           const rec = await api.recWithinByAttrs({ ...attrs, top_k: 12, filters: f });
-          ids = (rec?.items || []).map((x:any) => String(x.property_id));
+          ids = (rec?.items || []).map((x: any) => String(x.property_id));
           if (ids.length) break;
         }
       }
@@ -303,11 +278,10 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
         return;
       }
 
-      const details = await Promise.all(ids.map((id:string) => getListing(id).catch(() => null)));
+      const details = await Promise.all(ids.map((id: string) => getListing(id).catch(() => null)));
       setRecommendations(details.filter(Boolean) as Listing[]);
-      // On success, clear draft
-      localStorage.removeItem(DRAFT_KEY);
-    } catch (e:any) {
+      localStorage.removeItem(DRAFT_KEY); // success → clear draft
+    } catch (e: any) {
       console.error('=== RECOMMENDATION ERROR ===', e);
       setRecommendationError(e?.message || 'Failed to get recommendations. Please try again later.');
       setRecommendations([]);
@@ -317,10 +291,14 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
   }
 
   const propertyTypes = [
-    { value: 'apartment', label: 'Apartment' }, { value: 'villa', label: 'Villa' },
-    { value: 'penthouse', label: 'Penthouse' }, { value: 'chalet', label: 'Chalet' },
-    { value: 'studio', label: 'Studio' }, { value: 'duplex', label: 'Duplex' },
-    { value: 'townhouse', label: 'Townhouse' }, { value: 'twin_house', label: 'Twin House' },
+    { value: 'apartment', label: 'Apartment' },
+    { value: 'villa', label: 'Villa' },
+    { value: 'penthouse', label: 'Penthouse' },
+    { value: 'chalet', label: 'Chalet' },
+    { value: 'studio', label: 'Studio' },
+    { value: 'duplex', label: 'Duplex' },
+    { value: 'townhouse', label: 'Townhouse' },
+    { value: 'twin_house', label: 'Twin House' },
     { value: 'standalone_villa', label: 'Standalone Villa' },
   ];
 
@@ -339,9 +317,17 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
 
   const handleClearDraft = () => {
     setAttributesForm({
-      property_type: 'apartment', city: '', town: '', district_compound: '',
-      bedrooms: 2, bathrooms: 1, size: 100, offering_type: 'sale',
-      completion_status: 'ready', furnished: false, price: '',
+      property_type: 'apartment',
+      city: '',
+      town: '',
+      district_compound: '',
+      bedrooms: 2,
+      bathrooms: 1,
+      size: 100,
+      offering_type: 'sale',
+      completion_status: 'ready',
+      furnished: false,
+      price: '',
     });
     localStorage.removeItem(DRAFT_KEY);
     setEstimatedPrice(null);
@@ -445,8 +431,12 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
             <h3 className="font-semibold text-light-text dark:text-dark-text">
               {t('describeYourProperty', state.language)}
             </h3>
-            <Button variant="outline" size="sm" onClick={handleClearDraft}
-              className="text-light-highlight border-light-highlight hover:bg-light-highlight hover:text-white">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearDraft}
+              className="text-light-highlight border-light-highlight hover:bg-light-highlight hover:text-white"
+            >
               Clear
             </Button>
           </div>
@@ -476,30 +466,48 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Input label={t('city', state.language)}
+              <Input
+                label={t('city', state.language)}
                 value={attributesForm.city}
                 onChange={(e) => setAttributesForm(prev => ({ ...prev, city: e.target.value }))}
-                placeholder="e.g., Giza" />
-              <Input label={t('town', state.language)}
+                placeholder="e.g., Giza"
+              />
+              <Input
+                label={t('town', state.language)}
                 value={attributesForm.town}
                 onChange={(e) => setAttributesForm(prev => ({ ...prev, town: e.target.value }))}
-                placeholder="e.g., 6 October" />
-              <Input label={t('compound', state.language)}
+                placeholder="e.g., 6 October"
+              />
+              <Input
+                label={t('compound', state.language)}
                 value={attributesForm.district_compound}
                 onChange={(e) => setAttributesForm(prev => ({ ...prev, district_compound: e.target.value }))}
-                placeholder="e.g., Madinaty" />
+                placeholder="e.g., Madinaty"
+              />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <Input label={t('bedrooms', state.language)} type="number" min="0"
+              <Input
+                label={t('bedrooms', state.language)}
+                type="number"
+                min="0"
                 value={attributesForm.bedrooms}
-                onChange={(e) => setAttributesForm(prev => ({ ...prev, bedrooms: Number(e.target.value) }))} />
-              <Input label={t('bathrooms', state.language)} type="number" min="0"
+                onChange={(e) => setAttributesForm(prev => ({ ...prev, bedrooms: Number(e.target.value) }))}
+              />
+              <Input
+                label={t('bathrooms', state.language)}
+                type="number"
+                min="0"
                 value={attributesForm.bathrooms}
-                onChange={(e) => setAttributesForm(prev => ({ ...prev, bathrooms: Number(e.target.value) }))} />
-              <Input label={t('size', state.language)} type="number" min="1"
+                onChange={(e) => setAttributesForm(prev => ({ ...prev, bathrooms: Number(e.target.value) }))}
+              />
+              <Input
+                label={t('size', state.language)}
+                type="number"
+                min="1"
                 value={attributesForm.size}
-                onChange={(e) => setAttributesForm(prev => ({ ...prev, size: Number(e.target.value) }))} />
+                onChange={(e) => setAttributesForm(prev => ({ ...prev, size: Number(e.target.value) }))}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -526,11 +534,9 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
                   onChange={(e) => setAttributesForm(prev => ({ ...prev, completion_status: e.target.value }))}
                   className="w-full px-4 py-3 bg-white dark:bg-dark-surface border border-light-border dark:border-dark-muted rounded-aqar text-light-text dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-light-primary"
                 >
-                  {[
-                    { value: 'ready', label: t('ready', state.language) },
-                    { value: 'under_construction', label: t('underConstruction', state.language) },
-                    { value: 'off_plan', label: t('offPlan', state.language) },
-                  ].map(status => <option key={status.value} value={status.value}>{status.label}</option>)}
+                  {completionStatuses.map(status => (
+                    <option key={status.value} value={status.value}>{status.label}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -543,9 +549,11 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
                   attributesForm.furnished ? 'bg-light-primary dark:bg-dark-primary' : 'bg-light-border dark:bg-dark-muted'
                 }`}
               >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  attributesForm.furnished ? 'translate-x-6 rtl:-translate-x-6' : 'translate-x-0.5 rtl:-translate-x-0.5'
-                }`} />
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    attributesForm.furnished ? 'translate-x-6 rtl:-translate-x-6' : 'translate-x-0.5 rtl:-translate-x-0.5'
+                  }`}
+                />
               </button>
             </div>
 
@@ -554,9 +562,13 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
                 {t('askingPrice', state.language)} (Optional)
               </label>
               <div className="flex gap-3">
-                <Input type="number" value={attributesForm.price}
+                <Input
+                  type="number"
+                  value={attributesForm.price}
                   onChange={(e) => setAttributesForm(prev => ({ ...prev, price: e.target.value }))}
-                  placeholder="Enter price or leave empty" className="flex-1" />
+                  placeholder="Enter price or leave empty"
+                  className="flex-1"
+                />
                 <Button variant="outline" onClick={() => setShowEstimateModal(true)} className="px-4">
                   <WandSparkles className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
                   Predict
@@ -570,27 +582,27 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
                 </div>
               )}
             </div>
-          </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              variant="gradient"
-              onClick={() => handleGetRecommendationsByAttributesWithType('similar')}
-              disabled={loading}
-              className="flex-1"
-            >
-              <Sparkles className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-              {loading && recommendationType === 'similar' ? 'Loading...' : t('similarLive', state.language)}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleGetRecommendationsByAttributesWithType('filtered')}
-              disabled={loading}
-              className="flex-1"
-            >
-              <Filter className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-              {loading && recommendationType === 'filtered' ? 'Loading...' : t('similarWithinFilters', state.language)}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                variant="gradient"
+                onClick={() => handleGetRecommendationsByAttributesWithType('similar')}
+                disabled={loading}
+                className="flex-1"
+              >
+                <Sparkles className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
+                {loading && recommendationType === 'similar' ? 'Loading...' : t('similarLive', state.language)}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleGetRecommendationsByAttributesWithType('filtered')}
+                disabled={loading}
+                className="flex-1"
+              >
+                <Filter className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
+                {loading && recommendationType === 'filtered' ? 'Loading...' : t('similarWithinFilters', state.language)}
+              </Button>
+            </div>
           </div>
         </Card>
       )}
@@ -614,32 +626,34 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
               {recommendationType === 'similar'
                 ? t('similarProperties', state.language)
                 : t('recommendations', state.language)}
-              {loading && <span className="text-sm font-normal text-light-text/70 dark:text-dark-muted ml-2">Loading...</span>}
+              {loading && (
+                <span className="text-sm font-normal text-light-text/70 dark:text-dark-muted ml-2">
+                  Loading...
+                </span>
+              )}
             </h3>
             <div className="flex bg-light-primary-200 dark:bg-dark-surface rounded-aqar p-1">
-              {[
-                { mode: 'large' as ViewMode, icon: Grid2X2, cols: 'grid-cols-1 sm:grid-cols-2' },
-                { mode: 'medium' as ViewMode, icon: LayoutGrid, cols: 'grid-cols-2 sm:grid-cols-3' },
-                { mode: 'small' as ViewMode, icon: Grid3X3, cols: 'grid-cols-2 sm:grid-cols-4' },
-                { mode: 'list' as ViewMode, icon: List, cols: 'grid-cols-1' },
-              ].map(({ mode, icon: Icon, cols }) => (
-                <button key={mode} onClick={() => setViewMode(mode)}
+              {viewOptions.map(({ mode, icon: Icon }) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
                   className={`p-2 rounded-lg transition-colors ${
-                    viewMode === mode ? 'bg-white dark:bg-dark-primary text-light-primary dark:text-dark-text'
-                                      : 'text-light-text dark:text-dark-muted hover:text-light-primary dark:hover:text-dark-text'
-                  }`}>
+                    viewMode === mode
+                      ? 'bg-white dark:bg-dark-primary text-light-primary dark:text-dark-text'
+                      : 'text-light-text dark:text-dark-muted hover:text-light-primary dark:hover:text-dark-text'
+                  }`}
+                >
                   <Icon className="w-4 h-4" />
                 </button>
               ))}
             </div>
           </div>
 
-          <div className={`grid gap-3 ${([
-            { mode: 'large', cols: 'grid-cols-1 sm:grid-cols-2' },
-            { mode: 'medium', cols: 'grid-cols-2 sm:grid-cols-3' },
-            { mode: 'small', cols: 'grid-cols-2 sm:grid-cols-4' },
-            { mode: 'list', cols: 'grid-cols-1' },
-          ] as any[]).find(v => v.mode === viewMode)?.cols}`}>
+          <div
+            className={`grid gap-3 ${
+              viewOptions.find(v => v.mode === viewMode)?.cols
+            }`}
+          >
             {recommendations.map((listing) => (
               <ListingCard
                 key={listing.id}
