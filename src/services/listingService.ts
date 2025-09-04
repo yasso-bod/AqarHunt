@@ -32,7 +32,18 @@ function normalizeFilters(filters: SearchFilters & { limit?: number; page?: numb
 
   // Property type - normalize to TitleCase
   if (filters.property_type) {
-    add("property_type", titleCase(filters.property_type));
+    // Ensure property type is exactly as expected by API
+    const normalizedType = filters.property_type.toLowerCase();
+    const propertyTypeMap: { [key: string]: string } = {
+      'apartment': 'Apartment',
+      'villa': 'Villa', 
+      'studio': 'Studio',
+      'townhouse': 'Townhouse',
+      'penthouse': 'Penthouse',
+      'duplex': 'Duplex',
+      'chalet': 'Chalet'
+    };
+    add("property_type", propertyTypeMap[normalizedType] || titleCase(filters.property_type));
   }
 
   // Furnished - normalize to proper format

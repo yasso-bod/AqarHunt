@@ -36,7 +36,8 @@ export function SearchTab({ onViewListing }: SearchTabProps) {
 
   // Load listings when filters or search query changes
   React.useEffect(() => {
-    // Load with current filters (search is now handled via filters)
+    // Load with current filters and log for debugging
+    console.log('SearchTab: Loading listings with filters:', state.searchFilters);
     loadListings(true);
   }, [state.searchFilters, debouncedSearchQuery, state.sortBy]);
 

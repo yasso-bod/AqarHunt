@@ -63,11 +63,11 @@ export function FilterDrawer({ isOpen, onClose }: FilterDrawerProps) {
   }, [debouncedTownQuery]);
 
   const propertyTypes = [
-    { value: 'apartment', label: 'Apartment' },
-    { value: 'villa', label: 'Villa' },
-    { value: 'studio', label: 'Studio' },
-    { value: 'townhouse', label: 'Townhouse' },
-    { value: 'penthouse', label: 'Penthouse' },
+    { value: 'Apartment', label: 'Apartment' },
+    { value: 'Villa', label: 'Villa' },
+    { value: 'Studio', label: 'Studio' },
+    { value: 'Townhouse', label: 'Townhouse' },
+    { value: 'Penthouse', label: 'Penthouse' },
   ];
 
   const handleApplyFilters = () => {
