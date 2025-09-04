@@ -17,22 +17,59 @@ import { useToast } from '../ui/Toast';
 import { Listing } from '../../types';
 
 // --- helpers: mapping to API schema (match backend exact strings)
-const mapType = (val?: string) => {
-  if (!val) return undefined;
-  const M: Record<string,string> = {
-    apartment:"Apartment", villa:"Villa", townhouse:"Townhouse", duplex:"Duplex",
-    penthouse:"Penthouse", studio:"Studio", "twin_house":"Twin House",
-    chalet:"Chalet", "standalone_villa":"Standalone Villa"
+const mapType = (t?: string) => {
+  const M: Record<string, string> = {
+    apartment: "Apartment",
+    villa: "Villa",
+    townhouse: "Townhouse",
+    duplex: "Duplex",
+    penthouse: "Penthouse",
+    studio: "Studio",
+    "twin_house": "Twin House",
+    chalet: "Chalet",
+    "standalone_villa": "Standalone Villa",
   };
-  const k = val.toLowerCase();
-  return M[k] ?? val;
+  return t ? (M[t.toLowerCase()] ?? t) : undefined;
 };
-const mapOffering = (val?: string) =>
-  val ? (val.toLowerCase() === 'rent' ? 'Rent' : 'Sale') : undefined;
-const mapFurnishingFromBool = (b?: boolean) =>
-  b === undefined ? undefined : (b ? 'Furnished' : 'Unfurnished');
-const clean = (o:any) =>
-  Object.fromEntries(Object.entries(o).filter(([_,v]) => v!==undefined && v!==null && v!==''));
+const mapOffering = (o?: string) => (o ? (o.toLowerCase() === "rent" ? "Rent" : "Sale") : undefined);
+const mapFurnished = (b?: boolean) => (b === undefined ? undefined : b ? "Yes" : "No");
+const clean = (o: any) => Object.fromEntries(Object.entries(o).filter(([_, v]) => v !== undefined && v !== null && v !== ""));
+async function snapToDbStrings<T>(form: T): Promise<T> { return form; }
+
+function buildAttrsPayload(form: any) {
+  return clean({
+    property_type: mapType(form.property_type),
+    city: form.city,
+    town: form.town,
+    district_compound: form.district_compound || undefined,
+    bedrooms: form.bedrooms || undefined,
+    bathrooms: form.bathrooms || undefined,
+    size: form.size || undefined,
+    furnished: mapFurnished(form.furnished),
+    offering_type: mapOffering(form.offering_type),
+    price: form.price ? Number(form.price) : undefined,
+  });
+}
+
+function buildFiltersFromForm(form: any) {
+  const size = Number(form.size) || undefined;
+  const price = Number(form.price) || undefined;
+  return clean({
+    city: form.city,
+    town: form.town,
+    district_compound: form.district_compound || undefined,
+    property_type: mapType(form.property_type),
+    bedrooms_min: form.bedrooms || undefined,
+    bathrooms_min: form.bathrooms || undefined,
+    size_min: size ? Math.round(size * 0.8) : undefined,
+    size_max: size ? Math.round(size * 1.2) : undefined,
+    price_min: price ? Math.round(price * 0.75) : undefined,
+    price_max: price ? Math.round(price * 1.25) : undefined,
+    furnished: mapFurnished(form.furnished),
+    offering_type: mapOffering(form.offering_type),
+  });
+}
+
 
 // snap free-text to DB strings using suggest_fuzzy
 async function snapToDbStrings(form: any) {
