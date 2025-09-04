@@ -1,5 +1,5 @@
 // API Configuration
-export const API_BASE_URL = 'http://localhost:8000';
+export const API_BASE_URL = 'https://6124c5839e4f.ngrok-free.app';
 export const API_KEY = 'secret123';
 
 // API endpoints
