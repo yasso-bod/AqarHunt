@@ -6,6 +6,44 @@ import { t } from '../../utils/translations';
 import { Listing } from '../../types';
 import { cn } from '../../utils/cn';
 
+// Helper function to translate city names
+const translateCity = (city: string, language: string) => {
+  const cityMap: { [key: string]: string } = {
+    'Cairo': language === 'ar' ? 'القاهرة' : 'Cairo',
+    'Giza': language === 'ar' ? 'الجيزة' : 'Giza',
+    'Alexandria': language === 'ar' ? 'الإسكندرية' : 'Alexandria',
+  };
+  return cityMap[city] || city;
+};
+
+// Helper function to translate town/area names
+const translateTown = (town: string, language: string) => {
+  const townMap: { [key: string]: string } = {
+    'New Cairo': language === 'ar' ? 'القاهرة الجديدة' : 'New Cairo',
+    'Heliopolis': language === 'ar' ? 'مصر الجديدة' : 'Heliopolis',
+    'Maadi': language === 'ar' ? 'المعادي' : 'Maadi',
+    'Zamalek': language === 'ar' ? 'الزمالك' : 'Zamalek',
+    'Dokki': language === 'ar' ? 'الدقي' : 'Dokki',
+    'Mohandessin': language === 'ar' ? 'المهندسين' : 'Mohandessin',
+    'Nasr City': language === 'ar' ? 'مدينة نصر' : 'Nasr City',
+    'Downtown': language === 'ar' ? 'وسط البلد' : 'Downtown',
+    'Agouza': language === 'ar' ? 'العجوزة' : 'Agouza',
+    '6th of October': language === 'ar' ? 'مدينة السادس من أكتوبر' : '6th of October',
+    'Sheikh Zayed': language === 'ar' ? 'الشيخ زايد' : 'Sheikh Zayed',
+  };
+  return townMap[town] || town;
+};
+
+// Helper function to translate offering type
+const translateOfferingType = (offeringType: string, language: string) => {
+  if (offeringType === 'sale') {
+    return language === 'ar' ? 'بيع' : 'Sale';
+  } else if (offeringType === 'rent') {
+    return language === 'ar' ? 'إيجار' : 'Rent';
+  }
+  return offeringType;
+};
+
 interface ListingCardProps {
   listing: Listing;
   onClick: () => void;
@@ -149,7 +187,9 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
           
           <div className={cn('flex items-center text-light-text/70 dark:text-dark-muted', textSizes.meta)}>
             <MapPin className={cn('mr-1 rtl:mr-0 rtl:ml-1', variant === 'small' ? 'w-3 h-3' : 'w-4 h-4')} />
-            <span>{listing.city || 'Unknown'}, {listing.town || 'Unknown'}</span>
+            <span>
+              {translateCity(listing.city || 'Unknown', state.language)}, {translateTown(listing.town || 'Unknown', state.language)}
+            </span>
           </div>
         </div>
 
@@ -171,8 +211,8 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
               </div>
             </div>
             
-            <span className="capitalize text-light-primary dark:text-dark-primary font-medium">
-              {listing.offering_type || 'sale'}
+            <span className="text-light-primary dark:text-dark-primary font-medium">
+              {translateOfferingType(listing.offering_type || 'sale', state.language)}
             </span>
           </div>
         )}
@@ -202,7 +242,7 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
               <span>{formatBathrooms(listing.bathrooms)}</span>
             </div>
             <span className="text-light-primary dark:text-dark-primary font-medium">
-              {listing.offering_type || 'sale'}
+              {translateOfferingType(listing.offering_type || 'sale', state.language)}
             </span>
           </div>
         )}

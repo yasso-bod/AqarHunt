@@ -119,6 +119,28 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     // Units
     squareMeters: 'm²',
     
+    // Offering types
+    saleOffering: 'Sale',
+    rentOffering: 'Rent',
+    
+    // Cities in English
+    cairoCity: 'Cairo',
+    gizaCity: 'Giza',
+    alexandriaCity: 'Alexandria',
+    
+    // Areas/Towns in English
+    newCairo: 'New Cairo',
+    heliopolis: 'Heliopolis',
+    maadi: 'Maadi',
+    zamalek: 'Zamalek',
+    dokki: 'Dokki',
+    mohandessin: 'Mohandessin',
+    nasr_city: 'Nasr City',
+    downtown: 'Downtown',
+    agouza: 'Agouza',
+    sixth_october: '6th of October',
+    sheikh_zayed: 'Sheikh Zayed',
+    
     // Saved Properties Actions
     remove: 'Remove',
     selectAll: 'Select All',
@@ -310,6 +332,28 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     
     // Units
     squareMeters: 'م²',
+    
+    // Offering types
+    saleOffering: 'بيع',
+    rentOffering: 'إيجار',
+    
+    // Cities in Arabic
+    cairoCity: 'القاهرة',
+    gizaCity: 'الجيزة',
+    alexandriaCity: 'الإسكندرية',
+    
+    // Areas/Towns in Arabic
+    newCairo: 'القاهرة الجديدة',
+    heliopolis: 'مصر الجديدة',
+    maadi: 'المعادي',
+    zamalek: 'الزمالك',
+    dokki: 'الدقي',
+    mohandessin: 'المهندسين',
+    nasr_city: 'مدينة نصر',
+    downtown: 'وسط البلد',
+    agouza: 'العجوزة',
+    sixth_october: 'مدينة السادس من أكتوبر',
+    sheikh_zayed: 'الشيخ زايد',
     
     // Saved Properties Actions
     remove: 'حذف',

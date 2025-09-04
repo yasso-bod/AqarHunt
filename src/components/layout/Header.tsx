@@ -59,7 +59,7 @@ export function Header({ onProfileClick, onLogoClick }: HeaderProps) {
             className="px-3 hover:scale-105 transition-transform"
           >
             <Globe className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-            {state.language.toUpperCase()}
+            {state.language === 'en' ? 'AR' : 'EN'}
           </Button>
 
           {/* Avatar */}

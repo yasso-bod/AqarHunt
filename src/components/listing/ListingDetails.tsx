@@ -11,6 +11,34 @@ import { useToast } from '../ui/Toast';
 import { cn } from '../../utils/cn';
 import { Listing } from '../../types';
 
+// Helper function to translate city names
+const translateCity = (city: string, language: string) => {
+  const cityMap: { [key: string]: string } = {
+    'Cairo': language === 'ar' ? 'القاهرة' : 'Cairo',
+    'Giza': language === 'ar' ? 'الجيزة' : 'Giza',
+    'Alexandria': language === 'ar' ? 'الإسكندرية' : 'Alexandria',
+  };
+  return cityMap[city] || city;
+};
+
+// Helper function to translate town/area names
+const translateTown = (town: string, language: string) => {
+  const townMap: { [key: string]: string } = {
+    'New Cairo': language === 'ar' ? 'القاهرة الجديدة' : 'New Cairo',
+    'Heliopolis': language === 'ar' ? 'مصر الجديدة' : 'Heliopolis',
+    'Maadi': language === 'ar' ? 'المعادي' : 'Maadi',
+    'Zamalek': language === 'ar' ? 'الزمالك' : 'Zamalek',
+    'Dokki': language === 'ar' ? 'الدقي' : 'Dokki',
+    'Mohandessin': language === 'ar' ? 'المهندسين' : 'Mohandessin',
+    'Nasr City': language === 'ar' ? 'مدينة نصر' : 'Nasr City',
+    'Downtown': language === 'ar' ? 'وسط البلد' : 'Downtown',
+    'Agouza': language === 'ar' ? 'العجوزة' : 'Agouza',
+    '6th of October': language === 'ar' ? 'مدينة السادس من أكتوبر' : '6th of October',
+    'Sheikh Zayed': language === 'ar' ? 'الشيخ زايد' : 'Sheikh Zayed',
+  };
+  return townMap[town] || town;
+};
+
 interface ListingDetailsProps {
   listingId: string;
   initialListingData?: Listing | null;
@@ -225,7 +253,9 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
           
           <div className="flex items-center text-light-text/70 dark:text-dark-muted">
             <MapPin className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-            <span>{listing.city}, {listing.town}</span>
+            <span>
+              {translateCity(listing.city, state.language)}, {translateTown(listing.town, state.language)}
+            </span>
           </div>
 
           <div className="grid grid-cols-3 gap-4 py-4">
@@ -254,7 +284,12 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
 
           <div className="flex flex-wrap gap-2">
             <span className="px-3 py-1 bg-light-primary-200 dark:bg-dark-muted text-light-text dark:text-dark-text text-sm rounded-full capitalize">
-              {listing.offering_type}
+              {listing.offering_type === 'sale' 
+                ? (state.language === 'ar' ? 'بيع' : 'Sale')
+                : listing.offering_type === 'rent'
+                ? (state.language === 'ar' ? 'إيجار' : 'Rent')
+                : listing.offering_type
+              }
             </span>
             {listing.furnished && (
               <span className="px-3 py-1 bg-light-info/20 text-light-info dark:bg-dark-muted dark:text-dark-text text-sm rounded-full">
