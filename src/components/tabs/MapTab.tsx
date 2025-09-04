@@ -13,6 +13,34 @@ import { Listing } from '../../types';
 import { SearchFilters } from '../../types';
 import 'leaflet/dist/leaflet.css';
 
+// Helper function to normalize property type display
+function normalizePropertyType(propertyType: string): string {
+  if (!propertyType) return 'apartment';
+  
+  // Convert to lowercase for consistent comparison
+  const normalized = propertyType.toLowerCase().trim();
+  
+  // Handle various API response formats
+  const typeMap: { [key: string]: string } = {
+    'apartment': 'apartment',
+    'villa': 'villa',
+    'studio': 'studio',
+    'townhouse': 'townhouse',
+    'penthouse': 'penthouse',
+    'duplex': 'duplex',
+    'chalet': 'chalet',
+    'twin_house': 'townhouse', // Map twin_house to townhouse for display
+    'twin house': 'townhouse',
+    'standalone_villa': 'villa', // Map standalone_villa to villa for display
+    'standalone villa': 'villa',
+    // Handle potential API variations
+    'pent house': 'penthouse',
+    'town house': 'townhouse',
+  };
+  
+  return typeMap[normalized] || normalized;
+}
+
 // Fix for default markers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -177,7 +205,7 @@ export function MapTab({ onViewListing, onBack }: MapTabProps) {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <h4 className="font-semibold text-sm">{t(listing.property_type?.toLowerCase() || 'apartment', state.language)}</h4>
+                  <h4 className="font-semibold text-sm">{t(normalizePropertyType(listing.property_type), state.language)}</h4>
                   <p className="text-sm text-gray-600">
                     {listing.city}, {listing.town}
                   </p>

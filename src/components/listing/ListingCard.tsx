@@ -34,6 +34,34 @@ interface ListingCardProps {
   variant?: 'extra-large' | 'large' | 'medium' | 'small' | 'compact' | 'list';
 }
 
+// Helper function to normalize property type display
+function normalizePropertyType(propertyType: string): string {
+  if (!propertyType) return 'apartment';
+  
+  // Convert to lowercase for consistent comparison
+  const normalized = propertyType.toLowerCase().trim();
+  
+  // Handle various API response formats
+  const typeMap: { [key: string]: string } = {
+    'apartment': 'apartment',
+    'villa': 'villa',
+    'studio': 'studio',
+    'townhouse': 'townhouse',
+    'penthouse': 'penthouse',
+    'duplex': 'duplex',
+    'chalet': 'chalet',
+    'twin_house': 'townhouse', // Map twin_house to townhouse for display
+    'twin house': 'townhouse',
+    'standalone_villa': 'villa', // Map standalone_villa to villa for display
+    'standalone villa': 'villa',
+    // Handle potential API variations
+    'pent house': 'penthouse',
+    'town house': 'townhouse',
+  };
+  
+  return typeMap[normalized] || normalized;
+}
+
 export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCardProps) {
   const { state, toggleSavedListing } = useApp();
   const isSaved = state.savedListings.includes(listing.id);
@@ -59,6 +87,9 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
   const formatSize = (size?: number) => {
     return size || 0;
   };
+  
+  // Get normalized property type for consistent display
+  const normalizedPropertyType = normalizePropertyType(listing.property_type);
 
   const getImageAspect = () => {
     switch (variant) {
@@ -166,7 +197,7 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
         {/* Property Info */}
         <div className={cn('space-y-1', variant === 'small' && 'space-y-0')}>
           <h3 className={cn('font-semibold text-light-text dark:text-dark-text capitalize', textSizes.title)}>
-            {t(listing.property_type?.toLowerCase() || 'apartment', state.language)} • {formatBedrooms(listing.bedrooms)} {t('br', state.language)} • {formatSize(listing.size)} {t('squareMeters', state.language)}
+            {t(normalizedPropertyType, state.language)} • {formatBedrooms(listing.bedrooms)} {t('br', state.language)} • {formatSize(listing.size)} {t('squareMeters', state.language)}
           </h3>
           
           <div className={cn('flex items-center text-light-text/70 dark:text-dark-muted', textSizes.meta)}>

@@ -11,6 +11,34 @@ import { useToast } from '../ui/Toast';
 import { cn } from '../../utils/cn';
 import { Listing } from '../../types';
 
+// Helper function to normalize property type display
+function normalizePropertyType(propertyType: string): string {
+  if (!propertyType) return 'apartment';
+  
+  // Convert to lowercase for consistent comparison
+  const normalized = propertyType.toLowerCase().trim();
+  
+  // Handle various API response formats
+  const typeMap: { [key: string]: string } = {
+    'apartment': 'apartment',
+    'villa': 'villa',
+    'studio': 'studio',
+    'townhouse': 'townhouse',
+    'penthouse': 'penthouse',
+    'duplex': 'duplex',
+    'chalet': 'chalet',
+    'twin_house': 'townhouse', // Map twin_house to townhouse for display
+    'twin house': 'townhouse',
+    'standalone_villa': 'villa', // Map standalone_villa to villa for display
+    'standalone villa': 'villa',
+    // Handle potential API variations
+    'pent house': 'penthouse',
+    'town house': 'townhouse',
+  };
+  
+  return typeMap[normalized] || normalized;
+}
+
 // Helper function to translate city names
 const translateCity = (city: string, language: string) => {
   // Revert to English for all locations until proper Arabic localization is implemented
@@ -236,12 +264,15 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
       </div>
     );
   }
+  
+  // Get normalized property type for consistent display
+  const normalizedPropertyType = normalizePropertyType(listing.property_type);
 
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: `${listing.property_type} in ${listing.city}`,
-        text: `Check out this ${listing.property_type} for ${listing.price?.toLocaleString()} EGP`,
+        title: `${normalizedPropertyType} in ${listing.city}`,
+        text: `Check out this ${normalizedPropertyType} for ${listing.price?.toLocaleString()} EGP`,
         url: window.location.href,
       });
     }
@@ -333,7 +364,7 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
         {/* Property Details */}
         <Card className="p-4 space-y-4">
           <h2 className="text-h2 font-semibold text-light-text dark:text-dark-text capitalize">
-            {t(listing.property_type, state.language)} in {listing.district_compound}
+            {t(normalizedPropertyType, state.language)} in {listing.district_compound}
           </h2>
           
           <div className="flex items-center text-light-text/70 dark:text-dark-muted">
@@ -454,7 +485,7 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
                 />
                 <div className="text-center">
                   <p className="text-sm text-light-text/70 dark:text-dark-muted">
-                    Showing properties similar to this {listing.property_type} in {listing.city}
+                    Showing properties similar to this {t(normalizedPropertyType, state.language)} in {listing.city}
                   </p>
                 </div>
               </div>
