@@ -4,8 +4,6 @@ import L from 'leaflet';
 import { MapPin, X, Search } from 'lucide-react';
 import { SearchBar } from '../search/SearchBar';
 import { Button } from '../ui/Button';
-import { BottomSheet } from '../ui/BottomSheet';
-import { ListingCard } from '../listing/ListingCard';
 import { useApp } from '../../contexts/AppContext';
 import { searchListings } from '../../services/listingService';
 import { useToast } from '../ui/Toast';
@@ -31,7 +29,6 @@ interface MapTabProps {
 export function MapTab({ onViewListing, onBack }: MapTabProps) {
   const { state } = useApp();
   const { showToast } = useToast();
-  const [selectedListing, setSelectedListing] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +54,6 @@ export function MapTab({ onViewListing, onBack }: MapTabProps) {
 
   // Load listings when filters or search query changes
   React.useEffect(() => {
-    // Load with map-specific filters
     loadListings();
   }, [mapFilters, debouncedSearchQuery]);
 
@@ -80,21 +76,21 @@ export function MapTab({ onViewListing, onBack }: MapTabProps) {
     }
   };
   
-  const selectedListingData = selectedListing 
-    ? listings.find(l => l.id === selectedListing)
-    : null;
 
   // Default center on Cairo
   const center: [number, number] = [30.0444, 31.2357];
 
-  const handleSearch = (query: string) => {
-    // Search is now handled via the SearchBar component setting map-specific filters
-    // The SearchBar will need to be updated to use mapFilters instead of global filters
+  const handleSearch = (query: string, filters?: SearchFilters) => {
+    setSearchQuery(query);
+    if (filters) {
+      setMapFilters(filters);
+    }
   };
 
-  const handleMapSearchBarFilter = (filters: SearchFilters) => {
+  const handleSearchBarFilter = (filters: SearchFilters) => {
     setMapFilters(filters);
   };
+
   return (
     <div className="relative h-screen overflow-hidden">
       {/* Fixed Search Bar */}
@@ -110,6 +106,7 @@ export function MapTab({ onViewListing, onBack }: MapTabProps) {
           <div className="flex-1">
             <SearchBar 
               onSearch={handleSearch}
+              onFiltersChange={handleSearchBarFilter}
               placeholder="Search properties on map..."
             />
           </div>
@@ -141,9 +138,6 @@ export function MapTab({ onViewListing, onBack }: MapTabProps) {
             <Marker
               key={listing.id}
               position={[listing.lat, listing.lon]}
-              eventHandlers={{
-                click: () => setSelectedListing(listing.id),
-              }}
             >
               <Popup>
                 <div className="p-2 max-w-xs">

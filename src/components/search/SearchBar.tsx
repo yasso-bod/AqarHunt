@@ -7,11 +7,12 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { cn } from '../../utils/cn';
 
 interface SearchBarProps {
-  onSearch: (query: string) => void;
+  onSearch: (query: string, filters?: SearchFilters) => void;
+  onFiltersChange?: (filters: SearchFilters) => void;
   placeholder?: string;
 }
 
-export function SearchBar({ onSearch, placeholder }: SearchBarProps) {
+export function SearchBar({ onSearch, onFiltersChange, placeholder }: SearchBarProps) {
   const { state, setSearchFilters } = useApp();
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<{ field: 'city' | 'town' | 'district_compound'; value: string }[]>([]);
@@ -91,8 +92,13 @@ export function SearchBar({ onSearch, placeholder }: SearchBarProps) {
       newFilters.district_compound = suggestion.value;
     }
     
-    setSearchFilters(newFilters);
-    onSearch(suggestion.value);
+    // Use onFiltersChange if provided (for Map tab), otherwise use global setSearchFilters
+    if (onFiltersChange) {
+      onFiltersChange(newFilters);
+    } else {
+      setSearchFilters(newFilters);
+    }
+    onSearch(suggestion.value, newFilters);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -104,7 +110,7 @@ export function SearchBar({ onSearch, placeholder }: SearchBarProps) {
       const bestMatch = suggestions[0];
       handleSuggestionClick(bestMatch);
     } else {
-      onSearch(query);
+      onSearch(query, {});
     }
   };
 
