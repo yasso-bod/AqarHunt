@@ -8,7 +8,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { EstimateModal } from '../modals/EstimateModal';
 import { useApp } from '../../contexts/AppContext';
 import { t } from '../../utils/translations';
-import { getListing, searchListings, getRecommendationsByAttributes, getRecommendationsByAttributesWithinFilters } from '../../services/listingService';
+import { getListing, searchListings, getRecommendationsByAttributes, getRecommendationsByAttributesWithinFilters, getSingleFieldSuggestions, SearchFilters } from '../../services/listingService';
 import { api } from '../../utils/api';
 import { useToast } from '../ui/Toast';
 import { Listing } from '../../types';
@@ -702,124 +702,6 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
         
         console.log('Final similar listings after enhanced filtering:', sortedListings.length);
         setRecommendations(sortedListings.slice(0, 10)); // Limit to 10 best results
-      }
-      
-      // Clear draft on successful submission
-      if (recommendations.length > 0) {
-        localStorage.removeItem(DRAFT_KEY);
-      }
-      
-    } catch (error) {
-      console.error('=== RECOMMENDATION ERROR ===', error);
-      showToast({
-        type: 'error',
-        title: 'Failed to get recommendations',
-        message: error instanceof Error ? error.message : 'Please try again later',
-      });
-      setRecommendations([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-            }
-          }
-        }
-        
-        console.log('Using recommendations filters:', recFilters);
-        
-        const response = await api.recWithinLive({ 
-          property_id: seedPropertyId, 
-          top_k: 10, 
-          filters: recFilters 
-        });
-        
-        console.log('Filtered recommendations response:', response);
-        
-        // Extract property IDs and fetch full details
-        const propertyIds = response.items?.map((item: any) => String(item.property_id)) || [];
-        
-        if (propertyIds.length === 0) {
-          console.log('No filtered recommendations found');
-          setRecommendations([]);
-          showToast({
-            type: 'info',
-            title: 'No similar properties found with current filters',
-            message: 'Try using "Similar (Live)" instead or adjust your filters.',
-          });
-          return;
-        }
-        
-        console.log('Found filtered property IDs:', propertyIds);
-        
-        const detailsPromises = propertyIds.map(async (id: string) => {
-          try {
-            return await getListing(id);
-          } catch (error) {
-            console.warn(`Failed to load details for listing ${id}:`, error);
-            return null;
-          }
-        });
-        
-        const fullListings = await Promise.all(detailsPromises);
-        const validListings = fullListings.filter(Boolean) as Listing[];
-        
-        console.log('Loaded filtered listings:', validListings.length);
-        setRecommendations(validListings);
-      } else {
-        // Similar recommendations (no additional filters, but still location-aware)
-        const response = await api.recLive({ property_id: seedPropertyId, top_k: 10 });
-        
-        console.log('Similar recommendations response:', response);
-        
-        const propertyIds = response.items?.map((item: any) => String(item.property_id)) || [];
-        
-        if (propertyIds.length === 0) {
-          console.log('No similar properties found');
-          setRecommendations([]);
-          showToast({
-            type: 'info',
-            title: 'No similar properties found',
-            message: 'Try adjusting your property description or location.',
-          });
-          return;
-        }
-        
-        console.log('Found similar property IDs:', propertyIds);
-        
-        const detailsPromises = propertyIds.map(async (id: string) => {
-          try {
-            return await getListing(id);
-          } catch (error) {
-            console.warn(`Failed to load details for listing ${id}:`, error);
-            return null;
-          }
-        });
-        
-        const fullListings = await Promise.all(detailsPromises);
-        const validListings = fullListings.filter(Boolean) as Listing[];
-        
-        console.log('Loaded similar listings:', validListings.length);
-        setRecommendations(validListings);
-        
-        // Post-filter results to ensure location matching for "Similar (Live)"
-        if (normalizedLocations.city || normalizedLocations.town) {
-          const locationFilteredListings = validListings.filter(listing => {
-            // Prioritize exact location matches
-            const cityMatch = !normalizedLocations.city || 
-              listing.city?.toLowerCase() === normalizedLocations.city.toLowerCase();
-            const townMatch = !normalizedLocations.town || 
-              listing.town?.toLowerCase() === normalizedLocations.town.toLowerCase();
-            
-            return cityMatch && townMatch;
-          });
-          
-          console.log('Location-filtered similar listings:', locationFilteredListings.length);
-          
-          // Use location-filtered results if we have enough, otherwise use all results
-          if (locationFilteredListings.length >= 3) {
-            setRecommendations(locationFilteredListings);
-          }
-        }
       }
       
       // Clear draft on successful submission
