@@ -459,6 +459,29 @@ export function CreateListing({ onBack, onViewListing }: CreateListingProps) {
     }
   };
 
+  // Function to check if user can navigate to a specific step
+  const canNavigateToStep = (targetStep: number) => {
+    // Always allow navigation to current step or backward to previous steps
+    if (targetStep <= currentStep) {
+      return true;
+    }
+    
+    // For forward navigation, check if all previous steps are complete
+    for (let i = currentStep; i < targetStep; i++) {
+      if (!isStepComplete(i)) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  const handleStepClick = (targetStep: number) => {
+    if (canNavigateToStep(targetStep)) {
+      setCurrentStep(targetStep);
+    }
+  };
+
   // Validation function to check if current step is complete
   const isStepComplete = (step: number) => {
     switch (step) {
@@ -567,12 +590,15 @@ export function CreateListing({ onBack, onViewListing }: CreateListingProps) {
                 className={`flex items-center ${index < steps.length - 1 ? 'flex-1' : ''}`}
               >
                 <button
-                  onClick={() => setCurrentStep(index)}
+                  onClick={() => handleStepClick(index)}
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all hover:scale-105 ${
                     index === currentStep
                       ? 'bg-light-primary dark:bg-dark-primary text-white hover:bg-light-primary/90 dark:hover:bg-dark-primary/90'
-                      : 'bg-light-border dark:bg-dark-muted text-light-text/50 dark:text-dark-muted hover:bg-light-primary/20 dark:hover:bg-dark-primary/20'
+                      : canNavigateToStep(index)
+                        ? 'bg-light-border dark:bg-dark-muted text-light-text/50 dark:text-dark-muted hover:bg-light-primary/20 dark:hover:bg-dark-primary/20 cursor-pointer'
+                        : 'bg-light-border dark:bg-dark-muted text-light-text/30 dark:text-dark-muted/50 cursor-not-allowed opacity-50'
                   }`}
+                  disabled={!canNavigateToStep(index)}
                 >
                   {index + 1}
                 </button>
