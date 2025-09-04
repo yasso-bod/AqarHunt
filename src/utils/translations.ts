@@ -118,6 +118,10 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     
     // Units
     squareMeters: 'm²',
+    
+    // Saved Properties Actions
+    remove: 'Remove',
+    selectAll: 'Select All',
   },
   ar: {
     // Navigation
@@ -306,6 +310,10 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     
     // Units
     squareMeters: 'م²',
+    
+    // Saved Properties Actions
+    remove: 'حذف',
+    selectAll: 'تحديد الكل',
   }
 };
 

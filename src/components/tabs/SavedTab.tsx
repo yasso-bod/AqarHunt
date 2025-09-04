@@ -68,6 +68,16 @@ export function SavedTab({ onViewListing }: SavedTabProps) {
     setSelectedItems([]);
   };
 
+  const handleSelectAll = () => {
+    if (selectedItems.length === savedListings.length) {
+      // If all are selected, deselect all
+      setSelectedItems([]);
+    } else {
+      // Select all listings
+      setSelectedItems(savedListings.map(listing => listing.id));
+    }
+  };
+
   const viewOptions = [
     { mode: 'large' as ViewMode, icon: Grid2X2, cols: 'grid-cols-1 sm:grid-cols-2' },
     { mode: 'medium' as ViewMode, icon: LayoutGrid, cols: 'grid-cols-2 sm:grid-cols-3' },
@@ -123,14 +133,38 @@ export function SavedTab({ onViewListing }: SavedTabProps) {
         
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
           {selectedItems.length > 0 && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAll}
+                className="text-light-primary border-light-primary hover:bg-light-primary hover:text-white dark:text-dark-text dark:border-dark-primary dark:hover:bg-dark-primary"
+              >
+                {selectedItems.length === savedListings.length ? 
+                  (state.language === 'ar' ? 'إلغاء تحديد الكل' : 'Deselect All') : 
+                  t('selectAll', state.language)
+                }
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkRemove}
+                className="text-light-highlight border-light-highlight hover:bg-light-highlight hover:text-white"
+              >
+                <Trash2 className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
+                {t('remove', state.language)} ({selectedItems.length})
+              </Button>
+            </>
+          )}
+          
+          {selectedItems.length === 0 && savedListings.length > 0 && (
             <Button
               variant="outline"
               size="sm"
-              onClick={handleBulkRemove}
-              className="text-light-highlight border-light-highlight hover:bg-light-highlight hover:text-white"
+              onClick={handleSelectAll}
+              className="text-light-primary border-light-primary hover:bg-light-primary hover:text-white dark:text-dark-text dark:border-dark-primary dark:hover:bg-dark-primary"
             >
-              <Trash2 className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-              Remove ({selectedItems.length})
+              {t('selectAll', state.language)}
             </Button>
           )}
           
