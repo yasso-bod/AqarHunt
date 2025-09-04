@@ -1,5 +1,5 @@
 // API Configuration
-export const API_BASE_URL = 'https://6124c5839e4f.ngrok-free.app';
+export const API_BASE_URL = 'https://5f0ace1b1dfe.ngrok-free.app';
 export const API_KEY = 'secret123';
 
 // API endpoints
@@ -17,6 +17,8 @@ export const API_ENDPOINTS = {
   recommendByPropertyLive: '/recommend/by_property_live',
   recommendWithinFilters: '/recommend/within_filters',
   recommendWithinFiltersLive: '/recommend/within_filters_live',
+  recommendByAttributesLive: '/recommend/by_attributes_live',
+  recommendWithinFiltersByAttributesLive: '/recommend/within_filters_by_attributes_live',
 } as const;
 
 // Request timeout in milliseconds
@@ -33,5 +35,5 @@ export const RETRY_CONFIG = {
 const _PREVIOUS_API_BASE_URLS = [
   'http://localhost:8000', // Local development
   'http://127.0.0.1:8000', // Alternative local
-  'https://6124c5839e4f.ngrok-free.app', // Previous ngrok URL (may be expired)
+  'https://5f0ace1b1dfe.ngrok-free.app', // Previous ngrok URL (may be expired)
 ];
