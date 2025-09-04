@@ -173,11 +173,11 @@ export function MapTab({ onViewListing, onBack }: MapTabProps) {
                   <div className="w-24 h-16 mb-2 rounded overflow-hidden">
                     <img 
                       src={listing.images && listing.images.length > 0 ? listing.images[0] : 'https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=400'} 
-                      alt={`${t(listing.property_type, state.language)} in ${listing.city}`}
+                     alt={`${t(listing.property_type?.toLowerCase() || 'apartment', state.language)} in ${listing.city}`}
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <h4 className="font-semibold text-sm">{t(listing.property_type, state.language)}</h4>
+                  <h4 className="font-semibold text-sm">{t(listing.property_type?.toLowerCase() || 'apartment', state.language)}</h4>
                   <p className="text-sm text-gray-600">
                     {listing.city}, {listing.town}
                   </p>
@@ -188,7 +188,7 @@ export function MapTab({ onViewListing, onBack }: MapTabProps) {
                     onClick={() => onViewListing(listing.id)}
                     className="w-full bg-light-primary hover:bg-light-primary/90 text-white px-3 py-1 rounded text-sm font-medium transition-colors mt-2"
                   >
-                    View Full Details
+                    {t('viewFullDetails', state.language)}
                   </button>
                 </div>
               </Popup>

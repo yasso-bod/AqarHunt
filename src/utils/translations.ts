@@ -160,6 +160,9 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     similarWithinFilters: 'Similar within Filters',
     similarLive: 'Similar (Live)',
     fillPropertyDetailsForRecommendations: 'Fill in the property details above to get AI-powered recommendations',
+    
+    // Map popup
+    viewFullDetails: 'View Full Details',
   },
   ar: {
     // Navigation
@@ -390,6 +393,9 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     similarWithinFilters: 'مشابه ضمن المرشحات',
     similarLive: 'مشابه (مباشر)',
     fillPropertyDetailsForRecommendations: 'املأ تفاصيل العقار أعلاه للحصول على توصيات مدعومة بالذكاء الاصطناعي',
+    
+    // Map popup
+    viewFullDetails: 'عرض التفاصيل الكاملة',
   }
 };
 
