@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, X, Search } from 'lucide-react';
 import { SearchBar } from '../search/SearchBar';
@@ -20,6 +20,28 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
+
+// Component to handle map navigation
+function MapNavigator({ listings, searchQuery }: { listings: Listing[]; searchQuery: string }) {
+  const map = useMap();
+  
+  React.useEffect(() => {
+    if (listings.length > 0 && searchQuery.trim()) {
+      // Calculate bounds for all search results
+      const bounds = L.latLngBounds(listings.map(listing => [listing.lat, listing.lon]));
+      
+      // Fit map to show all results with padding
+      map.fitBounds(bounds, {
+        padding: [20, 20],
+        maxZoom: 15, // Prevent zooming too close for single results
+        animate: true,
+        duration: 1.0 // Smooth transition animation
+      });
+    }
+  }, [listings, searchQuery, map]);
+  
+  return null;
+}
 
 interface MapTabProps {
   onViewListing: (listingId: string) => void;
@@ -61,7 +83,12 @@ export function MapTab({ onViewListing, onBack }: MapTabProps) {
   const loadListings = async () => {
     try {
       setLoading(true);
-      const response = await searchListings(mapFilters, 1, 1000); // Increase limit to get more comprehensive results
+      
+      // Determine result limit based on whether there's an active search
+      const hasActiveSearch = debouncedSearchQuery.trim() || Object.keys(mapFilters).length > 0;
+      const resultLimit = hasActiveSearch ? 200 : 1000; // Limit search results, keep default for initial load
+      
+      const response = await searchListings(mapFilters, 1, resultLimit);
       
       setListings(response.items);
       setTotalCount(response.count || response.items.length);
@@ -167,6 +194,9 @@ export function MapTab({ onViewListing, onBack }: MapTabProps) {
               </Popup>
             </Marker>
           ))}
+          
+          {/* Auto-navigation component */}
+          <MapNavigator listings={listings} searchQuery={debouncedSearchQuery} />
         </MapContainer>
       </div>
 
