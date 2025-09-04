@@ -569,7 +569,7 @@ export function CreateListing({ onBack, onViewListing }: CreateListingProps) {
                 <button
                   onClick={() => setCurrentStep(index)}
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all hover:scale-105 ${
-                    index <= currentStep
+                    index === currentStep
                       ? 'bg-light-primary dark:bg-dark-primary text-white hover:bg-light-primary/90 dark:hover:bg-dark-primary/90'
                       : 'bg-light-border dark:bg-dark-muted text-light-text/50 dark:text-dark-muted hover:bg-light-primary/20 dark:hover:bg-dark-primary/20'
                   }`}
