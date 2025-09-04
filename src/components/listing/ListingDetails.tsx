@@ -39,6 +39,7 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
   const [similarListings, setSimilarListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(!initialListingData);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
+  const [similarPropertiesRequested, setSimilarPropertiesRequested] = useState(false);
   
   const isSaved = listing ? state.savedListings.includes(listing.id) : false;
   
@@ -65,10 +66,34 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
 
   // Load similar listings when listing is loaded
   React.useEffect(() => {
-    if (listing) {
-      loadSimilarListings();
+    if (listing && !similarPropertiesRequested) {
+      // Don't auto-load similar listings anymore
+      // They will be loaded when user clicks the button
     }
-  }, [listing]);
+  }, [listing, similarPropertiesRequested]);
+
+  // Manual similar properties loading function
+  const handleLoadSimilarProperties = async () => {
+    if (!listing || loadingSimilar) return;
+    
+    try {
+      setLoadingSimilar(true);
+      setSimilarPropertiesRequested(true);
+      
+      // Call the recommendations API with current property details
+      loadSimilarListings();
+    } catch (error) {
+      console.error('Failed to load similar properties:', error);
+      showToast({
+        type: 'error',
+        title: 'Failed to load similar properties',
+        message: error instanceof Error ? error.message : 'Please try again later',
+      });
+      setSimilarListings([]);
+    } finally {
+      setLoadingSimilar(false);
+    }
+  };
 
   const loadListing = async () => {
     if (initialListingData) return;
@@ -93,14 +118,21 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
     if (!listing) return;
     
     try {
-      setLoadingSimilar(true);
+      // Use the recommendations API with current property as seed
       const similar = await getRecommendationsByPropertyLive(listing.id, 6);
       setSimilarListings(similar);
+      
+      if (similar.length === 0) {
+        showToast({
+          type: 'info',
+          title: 'No similar properties found',
+          message: 'We couldn\'t find properties similar to this one at the moment.',
+        });
+      }
     } catch (error) {
       console.error('Failed to load similar listings:', error);
-      setSimilarListings([]);
-    } finally {
-      setLoadingSimilar(false);
+      // Re-throw to be handled by the calling function
+      throw error;
     }
   };
 
@@ -287,8 +319,8 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
         </Card>
 
         {/* Actions */}
-        {!listing.price ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {!listing.price && (
             <Button
               variant="gradient"
               onClick={() => setShowEstimateModal(true)}
@@ -296,18 +328,17 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
               <WandSparkles className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
               {t('estimatePrice', state.language)}
             </Button>
-            
-            <Button variant="outline">
-              <Stars className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-              {t('similarProperties', state.language)}
-            </Button>
-          </div>
-        ) : (
-          <Button variant="outline" className="w-full">
+          )}
+          
+          <Button 
+            variant="outline" 
+            onClick={handleLoadSimilarProperties}
+            disabled={loadingSimilar}
+            className={!listing.price ? "" : "col-span-full"}
+          >
             <Stars className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-            {t('similarProperties', state.language)}
+            {loadingSimilar ? 'Loading...' : t('similarProperties', state.language)}
           </Button>
-        )}
 
         {/* Contact Seller */}
         <Card className="p-4">
@@ -327,21 +358,33 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
         </Card>
 
         {/* Similar Properties */}
-        {similarListings.length > 0 && (
+        {similarPropertiesRequested && (
           <div className="space-y-4">
             <h3 className="text-h2 font-semibold text-light-text dark:text-dark-text">
               {t('similarProperties', state.language)}
-              {loadingSimilar && (
-                <span className="text-sm font-normal text-light-text/70 dark:text-dark-muted ml-2">
-                  Loading...
-                </span>
-              )}
             </h3>
-            {!loadingSimilar && (
+            
+            {loadingSimilar ? (
+              <div className="flex justify-center py-8">
+                <div className="flex items-center space-x-2 rtl:space-x-reverse text-light-text/70 dark:text-dark-muted">
+                  <div className="w-4 h-4 border-2 border-light-primary border-t-transparent rounded-full animate-spin" />
+                  <span>Loading similar properties...</span>
+                </div>
+              </div>
+            ) : similarListings.length > 0 ? (
               <RecommendationCarousel
                 listings={similarListings}
                 onViewListing={onViewListing}
               />
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-4 text-light-primary-400 dark:text-dark-muted">
+                  <Stars className="w-full h-full" />
+                </div>
+                <p className="text-light-text/70 dark:text-dark-muted">
+                  No similar properties found at the moment.
+                </p>
+              </div>
             )}
           </div>
         )}
