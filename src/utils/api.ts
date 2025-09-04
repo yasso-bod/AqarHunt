@@ -96,43 +96,37 @@ export const api = {
     return fetchJSON(`${path}${qs}`);
   },
 
-  // Core endpoints
+  // core endpoints
   predict: (payload: any) =>
     fetchJSON("/predict_price", { method: "POST", body: JSON.stringify(payload) }),
 
   createListing: (payload: any) =>
     fetchJSON("/listings/create", { method: "POST", body: JSON.stringify(payload) }),
 
-  getListing: (id: string) =>
-    fetchJSON(`/listings/${encodeURIComponent(id)}`),
+  getListing: (id: string) => fetchJSON(`/listings/${encodeURIComponent(id)}`),
 
-  // Search & suggest
-  search: (payload: any) =>
-    fetchJSON("/search", { method: "POST", body: JSON.stringify(payload) }),
-
-  suggestFuzzy: ({ field, q, limit = 10 }: { field: string; q: string; limit?: number }) =>
-    fetchJSON(`/suggest_fuzzy?field=${encodeURIComponent(field)}&q=${encodeURIComponent(q)}&limit=${limit}`),
-
-  // Recommendations by existing property
+  // recommendations (existing listing)
   recLive: (payload: any) =>
     fetchJSON("/recommend/by_property_live", { method: "POST", body: JSON.stringify(payload) }),
 
   recWithinLive: (payload: any) =>
     fetchJSON("/recommend/within_filters_live", { method: "POST", body: JSON.stringify(payload) }),
 
-  // NEW: Recommendations by attributes (live)
+  // recommendations (by attributes) — NEW
   recByAttrs: (payload: any) =>
     fetchJSON("/recommend/by_attributes_live", { method: "POST", body: JSON.stringify(payload) }),
 
   recWithinByAttrs: (payload: any) =>
-    fetchJSON("/recommend/within_filters_by_attributes_live", { method: "POST", body: JSON.stringify(payload) }),
+    fetchJSON("/recommend/within_filters_by_attributes_live", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 
-  // Optional: keep non-live endpoints for compatibility (if backend exposes them)
-  recByAttributes: (payload: any) =>
-    fetchJSON("/recommend/by_attributes", { method: "POST", body: JSON.stringify(payload) }),
-
-  recWithinFiltersByAttributes: (payload: any) =>
-    fetchJSON("/recommend/within_filters_by_attributes", { method: "POST", body: JSON.stringify(payload) }),
+  // suggest
+  suggestFuzzy: ({ field, q, limit = 10 }: { field: string; q: string; limit?: number }) =>
+    fetchJSON(`/suggest_fuzzy?field=${encodeURIComponent(field)}&q=${encodeURIComponent(q)}&limit=${limit}`, {
+      method: "GET",
+    }),
 };
 
 
