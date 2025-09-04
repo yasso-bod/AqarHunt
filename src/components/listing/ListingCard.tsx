@@ -144,7 +144,7 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
         {/* Property Info */}
         <div className={cn('space-y-1', variant === 'small' && 'space-y-0')}>
           <h3 className={cn('font-semibold text-light-text dark:text-dark-text capitalize', textSizes.title)}>
-            {t(listing.property_type || 'apartment', state.language)} • {formatBedrooms(listing.bedrooms)} {t('br', state.language)} • {formatSize(listing.size)} {t('squareMeters', state.language)}
+            {t(listing.property_type?.toLowerCase() || 'apartment', state.language)} • {formatBedrooms(listing.bedrooms)} {t('br', state.language)} • {formatSize(listing.size)} {t('squareMeters', state.language)}
           </h3>
           
           <div className={cn('flex items-center text-light-text/70 dark:text-dark-muted', textSizes.meta)}>

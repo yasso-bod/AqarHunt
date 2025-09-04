@@ -48,6 +48,10 @@ export const translations = {
     studio: 'Studio',
     townhouse: 'Townhouse',
     penthouse: 'Penthouse',
+    duplex: 'Duplex',
+    chalet: 'Chalet',
+    twin_house: 'Twin House',
+    standalone_villa: 'Standalone Villa',
     
     // Listing Details
     verified: 'Verified',
@@ -162,6 +166,10 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     studio: 'استوديو',
     townhouse: 'تاون هاوس',
     penthouse: 'بنتهاوس',
+    duplex: 'دوبليكس',
+    chalet: 'شاليه',
+    twin_house: 'توين هاوس',
+    standalone_villa: 'فيلا منفصلة',
     
     // Listing Details
     verified: 'موثق',
@@ -187,6 +195,76 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     uploadPhotos: 'رفع الصور',
     submit: 'إرسال الإعلان',
     noPhoto: 'لا توجد صورة',
+    
+    // Additional Property Terms
+    floor: 'الطابق',
+    balcony: 'شرفة',
+    garden: 'حديقة',
+    parking: 'موقف سيارات',
+    elevator: 'مصعد',
+    security: 'أمن',
+    gym: 'صالة رياضية',
+    pool: 'حمام سباحة',
+    view: 'إطلالة',
+    seaView: 'إطلالة بحرية',
+    cityView: 'إطلالة على المدينة',
+    gardenView: 'إطلالة على الحديقة',
+    
+    // Property Features
+    airConditioning: 'تكييف',
+    centralHeating: 'تدفئة مركزية',
+    builtInKitchen: 'مطبخ مجهز',
+    builtInWardrobe: 'دولاب مدمج',
+    ceramic: 'سيراميك',
+    parquet: 'باركيه',
+    marble: 'رخام',
+    
+    // Location Terms
+    nearMetro: 'قريب من المترو',
+    nearSchools: 'قريب من المدارس',
+    nearHospitals: 'قريب من المستشفيات',
+    nearMalls: 'قريب من المولات',
+    nearMosque: 'قريب من المسجد',
+    
+    // Financial Terms
+    totalPrice: 'السعر الإجمالي',
+    pricePerMeter: 'سعر المتر',
+    monthlyRent: 'الإيجار الشهري',
+    yearlyRent: 'الإيجار السنوي',
+    deposit: 'التأمين',
+    commission: 'العمولة',
+    maintenance: 'الصيانة',
+    utilities: 'المرافق',
+    
+    // Status Terms
+    available: 'متاح',
+    sold: 'تم البيع',
+    rented: 'تم التأجير',
+    reserved: 'محجوز',
+    underOffer: 'تحت العرض',
+    
+    // Contact Terms
+    callNow: 'اتصل الآن',
+    whatsapp: 'واتساب',
+    email: 'بريد إلكتروني',
+    viewPhone: 'عرض الهاتف',
+    contactAgent: 'تواصل مع الوسيط',
+    
+    // Time Terms
+    today: 'اليوم',
+    yesterday: 'أمس',
+    daysAgo: 'منذ {count} أيام',
+    weeksAgo: 'منذ {count} أسابيع',
+    monthsAgo: 'منذ {count} أشهر',
+    
+    // Action Terms
+    viewDetails: 'عرض التفاصيل',
+    viewPhotos: 'عرض الصور',
+    viewMap: 'عرض الخريطة',
+    compare: 'مقارنة',
+    report: 'إبلاغ',
+    favorite: 'مفضلة',
+    unfavorite: 'إزالة من المفضلة',
     
     // Profile
     language: 'اللغة',

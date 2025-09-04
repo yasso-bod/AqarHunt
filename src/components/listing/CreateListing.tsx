@@ -74,6 +74,10 @@ export function CreateListing({ onBack, onViewListing }: CreateListingProps) {
     { value: 'studio', label: 'Studio' },
     { value: 'townhouse', label: 'Townhouse' },
     { value: 'penthouse', label: 'Penthouse' },
+    { value: 'duplex', label: 'Duplex' },
+    { value: 'chalet', label: 'Chalet' },
+    { value: 'twin_house', label: 'Twin House' },
+    { value: 'standalone_villa', label: 'Standalone Villa' },
   ];
 
   const completionStatuses = [

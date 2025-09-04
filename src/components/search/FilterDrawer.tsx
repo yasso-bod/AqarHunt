@@ -68,6 +68,10 @@ export function FilterDrawer({ isOpen, onClose }: FilterDrawerProps) {
     { value: 'Studio', label: 'Studio' },
     { value: 'Townhouse', label: 'Townhouse' },
     { value: 'Penthouse', label: 'Penthouse' },
+    { value: 'Duplex', label: 'Duplex' },
+    { value: 'Chalet', label: 'Chalet' },
+    { value: 'Twin_House', label: 'Twin House' },
+    { value: 'Standalone_Villa', label: 'Standalone Villa' },
   ];
 
   const handleApplyFilters = () => {
