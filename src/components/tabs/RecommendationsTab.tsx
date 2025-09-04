@@ -230,6 +230,16 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
   };
 
   const handleGetRecommendationsByAttributes = async () => {
+    // Validate that we have sufficient attributes to make a recommendation
+    if (!attributesForm.city || !attributesForm.town || !attributesForm.property_type) {
+      showToast({
+        type: 'warning',
+        title: 'Incomplete Property Details',
+        message: 'Please fill in at least City, Town, and Property Type to get recommendations.',
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       setRecommendationType(attributesRecommendationType);
@@ -713,8 +723,10 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       console.error('=== RECOMMENDATION ERROR ===', error);
       showToast({
         type: 'error',
-        title: 'Failed to get recommendations',
-        message: error instanceof Error ? error.message : 'Please try again later',
+        title: 'Recommendations Not Available',
+        message: error instanceof Error && error.message.includes('No vector found') 
+          ? 'Recommendations are not available for this property combination. Try adjusting your search criteria.'
+          : 'Failed to get recommendations. Please try again later.',
       });
       setRecommendations([]);
     } finally {
@@ -723,6 +735,16 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
   };
 
   const handleGetRecommendationsByAttributesWithType = async (type: 'similar' | 'filtered') => {
+    // Validate that we have sufficient attributes
+    if (!attributesForm.city || !attributesForm.town || !attributesForm.property_type) {
+      showToast({
+        type: 'warning',
+        title: 'Incomplete Property Details',
+        message: 'Please fill in at least City, Town, and Property Type to get recommendations.',
+      });
+      return;
+    }
+
     setAttributesRecommendationType(type);
     await handleGetRecommendationsByAttributes();
   };
