@@ -17,6 +17,7 @@ export class APIError extends Error {
 function getHeaders(extra: HeadersInit = {}) {
   return {
     "Content-Type": "application/json",
+    "Accept": "application/json",
     "x-api-key": API_KEY,
     "ngrok-skip-browser-warning": "true",
     ...extra,
