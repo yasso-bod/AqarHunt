@@ -137,6 +137,8 @@ export async function getSingleFieldSuggestions(
   query: string,
   limit = 10
 ): Promise<string[]> {
+  if (!query.trim()) return [];
+  
   const params = {
     field,
     q: query,
@@ -144,7 +146,25 @@ export async function getSingleFieldSuggestions(
   };
 
   const response = await api.get<{ items: string[] }>("/suggest_fuzzy", params);
-  return response.items || [];
+  const suggestions = response.items || [];
+  
+  // Sort suggestions to prioritize exact matches
+  return suggestions.sort((a, b) => {
+    const aExact = a.toLowerCase() === query.toLowerCase();
+    const bExact = b.toLowerCase() === query.toLowerCase();
+    
+    if (aExact && !bExact) return -1;
+    if (!aExact && bExact) return 1;
+    
+    // Then prioritize starts-with matches
+    const aStarts = a.toLowerCase().startsWith(query.toLowerCase());
+    const bStarts = b.toLowerCase().startsWith(query.toLowerCase());
+    
+    if (aStarts && !bStarts) return -1;
+    if (!aStarts && bStarts) return 1;
+    
+    return 0;
+  });
 }
 
 // Omni-search: search across all fields simultaneously

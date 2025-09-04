@@ -234,17 +234,21 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       setLoading(true);
       setRecommendationType(attributesRecommendationType);
       
-      // Step 1: Normalize location inputs using /suggest_fuzzy
+      // Step 1: Normalize location inputs using /suggest_fuzzy with better validation
       console.log('=== NORMALIZING LOCATION INPUTS ===');
       const normalizedLocations: { city?: string; town?: string; district_compound?: string } = {};
       
       // Normalize city
       if (attributesForm.city.trim()) {
         try {
-          const citySuggestions = await getSingleFieldSuggestions('city', attributesForm.city.trim(), 1);
+          const citySuggestions = await getSingleFieldSuggestions('city', attributesForm.city.trim(), 3);
           if (citySuggestions.length > 0) {
-            normalizedLocations.city = citySuggestions[0];
-            console.log(`City: "${attributesForm.city}" → "${citySuggestions[0]}"`);
+            // Find exact match first, then fuzzy match
+            const exactMatch = citySuggestions.find(city => 
+              city.toLowerCase() === attributesForm.city.toLowerCase()
+            );
+            normalizedLocations.city = exactMatch || citySuggestions[0];
+            console.log(`City: "${attributesForm.city}" → "${normalizedLocations.city}"`);
           } else {
             console.log(`City: "${attributesForm.city}" → NO SUGGESTION, OMITTING`);
           }
@@ -256,10 +260,14 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       // Normalize town
       if (attributesForm.town.trim()) {
         try {
-          const townSuggestions = await getSingleFieldSuggestions('town', attributesForm.town.trim(), 1);
+          const townSuggestions = await getSingleFieldSuggestions('town', attributesForm.town.trim(), 3);
           if (townSuggestions.length > 0) {
-            normalizedLocations.town = townSuggestions[0];
-            console.log(`Town: "${attributesForm.town}" → "${townSuggestions[0]}"`);
+            // Find exact match first, then fuzzy match
+            const exactMatch = townSuggestions.find(town => 
+              town.toLowerCase() === attributesForm.town.toLowerCase()
+            );
+            normalizedLocations.town = exactMatch || townSuggestions[0];
+            console.log(`Town: "${attributesForm.town}" → "${normalizedLocations.town}"`);
           } else {
             console.log(`Town: "${attributesForm.town}" → NO SUGGESTION, OMITTING`);
           }
@@ -271,10 +279,14 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       // Normalize district_compound
       if (attributesForm.district_compound.trim()) {
         try {
-          const compoundSuggestions = await getSingleFieldSuggestions('district_compound', attributesForm.district_compound.trim(), 1);
+          const compoundSuggestions = await getSingleFieldSuggestions('district_compound', attributesForm.district_compound.trim(), 3);
           if (compoundSuggestions.length > 0) {
-            normalizedLocations.district_compound = compoundSuggestions[0];
-            console.log(`District/Compound: "${attributesForm.district_compound}" → "${compoundSuggestions[0]}"`);
+            // Find exact match first, then fuzzy match
+            const exactMatch = compoundSuggestions.find(compound => 
+              compound.toLowerCase() === attributesForm.district_compound.toLowerCase()
+            );
+            normalizedLocations.district_compound = exactMatch || compoundSuggestions[0];
+            console.log(`District/Compound: "${attributesForm.district_compound}" → "${normalizedLocations.district_compound}"`);
           } else {
             console.log(`District/Compound: "${attributesForm.district_compound}" → NO SUGGESTION, OMITTING`);
           }
@@ -284,12 +296,15 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       }
       
       // Step 2: Build search filters with ONLY supported fields
-      const searchFilters: any = {};
+      const searchFilters: any = {
+        // Ensure we have strict location matching
+        ...(normalizedLocations.city && { city: normalizedLocations.city }),
+        ...(normalizedLocations.town && { town: normalizedLocations.town }),
+        ...(normalizedLocations.district_compound && { district_compound: normalizedLocations.district_compound }),
+      };
       
-      // Add normalized locations
-      if (normalizedLocations.city) searchFilters.city = normalizedLocations.city;
-      if (normalizedLocations.town) searchFilters.town = normalizedLocations.town;
-      if (normalizedLocations.district_compound) searchFilters.district_compound = normalizedLocations.district_compound;
+      console.log('=== LOCATION FILTERS APPLIED ===');
+      console.log('Location filters:', searchFilters);
       
       // Property type mapping to match API expectations
       const propertyTypeMap: { [key: string]: string } = {
@@ -307,18 +322,27 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       if (attributesForm.property_type) {
         searchFilters.property_type = propertyTypeMap[attributesForm.property_type] || 
           attributesForm.property_type.charAt(0).toUpperCase() + attributesForm.property_type.slice(1);
+        console.log('Property type filter:', searchFilters.property_type);
       }
       
       // Only include supported numeric filters
-      if (attributesForm.bedrooms) searchFilters.bedrooms_min = attributesForm.bedrooms;
-      if (attributesForm.bathrooms) searchFilters.bathrooms_min = attributesForm.bathrooms;
+      if (attributesForm.bedrooms && attributesForm.bedrooms > 0) {
+        searchFilters.bedrooms_min = attributesForm.bedrooms;
+        console.log('Bedrooms filter:', searchFilters.bedrooms_min);
+      }
+      if (attributesForm.bathrooms && attributesForm.bathrooms > 0) {
+        searchFilters.bathrooms_min = attributesForm.bathrooms;
+        console.log('Bathrooms filter:', searchFilters.bathrooms_min);
+      }
       
-      // Price range filter (supported by /search)
+      // Price range filter with tighter bounds for better matching
       if (attributesForm.price) {
         const price = Number(attributesForm.price);
         if (price > 0) {
-          searchFilters.price_min = Math.max(0, price * 0.8);
-          searchFilters.price_max = price * 1.2;
+          // Tighter price range for better matching (±20% instead of ±20%)
+          searchFilters.price_min = Math.max(0, Math.round(price * 0.8));
+          searchFilters.price_max = Math.round(price * 1.2);
+          console.log('Price range filter:', searchFilters.price_min, 'to', searchFilters.price_max);
         }
       }
       
@@ -328,7 +352,7 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       // Step 3: Find a seed property using search with progressive relaxation
       let seedPropertyId: string | null = null;
       let attempts = 0;
-      const maxAttempts = 3;
+      const maxAttempts = 4; // Increased attempts for better matching
       let currentFilters = { ...searchFilters };
       
       while (!seedPropertyId && attempts < maxAttempts) {
@@ -357,14 +381,26 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
         
         attempts++;
         
-        // Progressive relaxation: locations first, then other constraints
+        // Progressive relaxation with priority: district_compound → town → price range → bedrooms
         if (attempts === 1) {
           // Remove district_compound first
-          if (currentFilters.district_compound) delete currentFilters.district_compound;
+          if (currentFilters.district_compound) {
+            delete currentFilters.district_compound;
+          }
           console.log('Relaxation 1: Removed district_compound');
         } else if (attempts === 2) {
-          // Remove town next
-          if (currentFilters.town) delete currentFilters.town;
+          // Widen price range instead of removing town
+          if (currentFilters.price_min && currentFilters.price_max) {
+            const originalPrice = Number(attributesForm.price);
+            currentFilters.price_min = Math.max(0, Math.round(originalPrice * 0.6));
+            currentFilters.price_max = Math.round(originalPrice * 1.4);
+          }
+          console.log('Relaxation 2: Widened price range');
+        } else if (attempts === 3) {
+          // Remove town as last resort but keep city
+          if (currentFilters.town) {
+            delete currentFilters.town;
+          }
           console.log('Relaxation 2: Removed town');
         }
       }
@@ -386,13 +422,15 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       
       // Step 4: Get recommendations using the seed property
       if (attributesRecommendationType === 'filtered') {
-        // Build filters for recommendations API (different from search filters)
-        const recFilters: any = {};
+        // Build filters for recommendations API with priority on location matching
+        const recFilters: any = {
+          // Prioritize location matching
+          ...(recsFilters.city && { city: recsFilters.city }),
+          ...(recsFilters.town && { town: recsFilters.town }),
+          ...(recsFilters.district_compound && { district_compound: recsFilters.district_compound }),
+        };
         
-        // Only include filters that are actually set in recsFilters
-        if (recsFilters.city) recFilters.city = recsFilters.city;
-        if (recsFilters.town) recFilters.town = recsFilters.town;
-        if (recsFilters.district_compound) recFilters.district_compound = recsFilters.district_compound;
+        // Add other filters from the recommendations tab filters
         if (recsFilters.price_min !== undefined) recFilters.price_min = recsFilters.price_min;
         if (recsFilters.price_max !== undefined) recFilters.price_max = recsFilters.price_max;
         if (recsFilters.bedrooms_min !== undefined) recFilters.bedrooms_min = recsFilters.bedrooms_min;
@@ -406,6 +444,29 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
         }
         if (recsFilters.offering_type) {
           recFilters.offering_type = recsFilters.offering_type.charAt(0).toUpperCase() + recsFilters.offering_type.slice(1);
+        }
+        
+        // If no specific recommendation filters are set, use the form data as filters
+        if (Object.keys(recFilters).length === 0) {
+          // Use normalized locations from form
+          if (normalizedLocations.city) recFilters.city = normalizedLocations.city;
+          if (normalizedLocations.town) recFilters.town = normalizedLocations.town;
+          if (normalizedLocations.district_compound) recFilters.district_compound = normalizedLocations.district_compound;
+          
+          // Add property type filter
+          if (attributesForm.property_type) {
+            recFilters.property_type = propertyTypeMap[attributesForm.property_type] || 
+              attributesForm.property_type.charAt(0).toUpperCase() + attributesForm.property_type.slice(1);
+          }
+          
+          // Add price range filter
+          if (attributesForm.price) {
+            const price = Number(attributesForm.price);
+            if (price > 0) {
+              recFilters.price_min = Math.max(0, Math.round(price * 0.8));
+              recFilters.price_max = Math.round(price * 1.2);
+            }
+          }
         }
         
         console.log('Using recommendations filters:', recFilters);
@@ -449,7 +510,7 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
         console.log('Loaded filtered listings:', validListings.length);
         setRecommendations(validListings);
       } else {
-        // Similar recommendations (no filters)
+        // Similar recommendations (no additional filters, but still location-aware)
         const response = await api.recLive({ property_id: seedPropertyId, top_k: 10 });
         
         console.log('Similar recommendations response:', response);
@@ -483,6 +544,26 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
         
         console.log('Loaded similar listings:', validListings.length);
         setRecommendations(validListings);
+        
+        // Post-filter results to ensure location matching for "Similar (Live)"
+        if (normalizedLocations.city || normalizedLocations.town) {
+          const locationFilteredListings = validListings.filter(listing => {
+            // Prioritize exact location matches
+            const cityMatch = !normalizedLocations.city || 
+              listing.city?.toLowerCase() === normalizedLocations.city.toLowerCase();
+            const townMatch = !normalizedLocations.town || 
+              listing.town?.toLowerCase() === normalizedLocations.town.toLowerCase();
+            
+            return cityMatch && townMatch;
+          });
+          
+          console.log('Location-filtered similar listings:', locationFilteredListings.length);
+          
+          // Use location-filtered results if we have enough, otherwise use all results
+          if (locationFilteredListings.length >= 3) {
+            setRecommendations(locationFilteredListings);
+          }
+        }
       }
       
       // Clear draft on successful submission
@@ -528,7 +609,8 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
   // Set default recommendation type based on filters
   React.useEffect(() => {
     const hasFilters = Object.keys(recsFilters).length > 0;
-    setAttributesRecommendationType(hasFilters ? 'filtered' : 'similar');
+    // Always default to 'filtered' for better location matching
+    setAttributesRecommendationType('filtered');
   }, [recsFilters]);
 
   const propertyTypes = [
