@@ -30,9 +30,9 @@ export function HomeTab({ onViewListing, onCreateListing, onNavigateToSearch }: 
   const [page, setPage] = useState(1);
 
   const quickFilters = [
-    { label: t('apartments', state.language), filter: { property_type: 'apartment' } },
-    { label: t('villas', state.language), filter: { property_type: 'villa' } },
-    { label: t('studios', state.language), filter: { property_type: 'studio' } },
+    { label: t('apartments', state.language), filter: { property_type: 'Apartment' } },
+    { label: t('villas', state.language), filter: { property_type: 'Villa' } },
+    { label: t('studios', state.language), filter: { property_type: 'Studio' } },
     { label: t('cairo', state.language), filter: { city: 'Cairo' } },
     { label: t('giza', state.language), filter: { city: 'Giza' } },
   ];
