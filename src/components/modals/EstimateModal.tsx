@@ -145,6 +145,13 @@ export function EstimateModal({
               placeholder="e.g., New Cairo"
             />
 
+            <Input
+              label={t('compound', state.language)}
+              value={formData.district_compound}
+              onChange={(e) => setFormData(prev => ({ ...prev, district_compound: e.target.value }))}
+              placeholder="e.g., Madinaty"
+            />
+
             <div>
               <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">
                 {t('propertyType', state.language)}
