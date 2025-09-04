@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles as WandSparkles, TrendingUp, Check } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+import { CascadingLocationSelector } from '../ui/CascadingLocationSelector';
 import { useApp } from '../../contexts/AppContext';
 import { t } from '../../utils/translations';
 import { predictPrice } from '../../services/listingService';
@@ -30,9 +30,11 @@ export function EstimateModal({
   const [estimatedPrice, setEstimatedPrice] = useState<number | null>(null);
   
   const [formData, setFormData] = useState({
-    city: initialData?.city || '',
-    town: initialData?.town || '',
-    district_compound: initialData?.district_compound || '',
+    location: {
+      city: initialData?.city || '',
+      town: initialData?.town || '',
+      district_compound: initialData?.district_compound || ''
+    },
     property_type: initialData?.property_type || 'apartment',
     offering_type: initialData?.offering_type || 'sale',
     bedrooms: initialData?.bedrooms || 2,
@@ -46,9 +48,11 @@ export function EstimateModal({
   React.useEffect(() => {
     if (initialData) {
       setFormData({
-        city: initialData.city || '',
-        town: initialData.town || '',
-        district_compound: initialData.district_compound || '',
+        location: {
+          city: initialData.city || '',
+          town: initialData.town || '',
+          district_compound: initialData.district_compound || ''
+        },
         property_type: initialData.property_type || 'apartment',
         offering_type: initialData.offering_type || 'sale',
         bedrooms: initialData.bedrooms || 2,
@@ -67,10 +71,9 @@ export function EstimateModal({
     const callPredictPrice = async () => {
       try {
         const response = await predictPrice({
-          city: formData.city,
-          town: formData.town,
-          district_compound: formData.district_compound,
-          district_compound: formData.district_compound,
+          city: formData.location.city,
+          town: formData.location.town,
+          district_compound: formData.location.district_compound,
           property_type: formData.property_type,
           furnishing: 'No', // Default value since furnished is not in the form
           completion_status: 'Completed', // Map to API format
@@ -134,26 +137,11 @@ export function EstimateModal({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
-            <Input
-              label={t('city', state.language)}
-              value={formData.city}
-              onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-              placeholder="e.g., Cairo"
-            />
-            
-            <Input
-              label={t('town', state.language)}
-              value={formData.town}
-              onChange={(e) => setFormData(prev => ({ ...prev, town: e.target.value }))}
-              placeholder="e.g., New Cairo"
-            />
 
-            <Input
-              label={t('compound', state.language)}
-              value={formData.district_compound}
-              onChange={(e) => setFormData(prev => ({ ...prev, district_compound: e.target.value }))}
-              placeholder="e.g., Madinaty"
+          <div className="space-y-4">
+            <CascadingLocationSelector
+              value={formData.location}
+              onChange={(location) => setFormData(prev => ({ ...prev, location }))}
             />
 
             <div>
@@ -213,7 +201,7 @@ export function EstimateModal({
           <Button
             onClick={handleSubmit}
             className="w-full mt-6"
-            disabled={!formData.city || !formData.town}
+            disabled={!formData.location.city || !formData.location.town}
           >
             <WandSparkles className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
             Get Estimate
@@ -258,7 +246,7 @@ export function EstimateModal({
               Estimate Details
             </h4>
             <div className="space-y-1 text-sm text-light-text/70 dark:text-dark-muted">
-              <p>• Location: {formData.city}, {formData.town}</p>
+              <p>• Location: {formData.location.city}, {formData.location.town}</p>
               <p>• Type: {formData.property_type}</p>
               <p>• Size: {formData.size}m² • {formData.bedrooms} BR • {formData.bathrooms} Bath</p>
               <p>• Confidence: High (based on 150+ similar properties)</p>
