@@ -87,23 +87,54 @@ async function fetchJSON(path: string, init: RequestInit = {}) {
 
 export const api = {
   health: () => fetchJSON("/health"),
-  post: <T>(path: string, body: any) => fetchJSON(path, { method: "POST", body: JSON.stringify(body) }),
+
+  post: <T>(path: string, body: any) =>
+    fetchJSON(path, { method: "POST", body: JSON.stringify(body) }),
+
   get: <T>(path: string, params?: Record<string, any>) => {
     const qs = params ? "?" + new URLSearchParams(params as any).toString() : "";
     return fetchJSON(`${path}${qs}`);
   },
-  predict: (payload: any) => fetchJSON("/predict_price", { method: "POST", body: JSON.stringify(payload) }),
-  createListing: (payload: any) => fetchJSON("/listings/create", { method: "POST", body: JSON.stringify(payload) }),
-  getListing: (id: string) => fetchJSON(`/listings/${encodeURIComponent(id)}`),
-  recLive: (payload: any) => fetchJSON("/recommend/by_property_live", { method: "POST", body: JSON.stringify(payload) }),
+
+  // Core endpoints
+  predict: (payload: any) =>
+    fetchJSON("/predict_price", { method: "POST", body: JSON.stringify(payload) }),
+
+  createListing: (payload: any) =>
+    fetchJSON("/listings/create", { method: "POST", body: JSON.stringify(payload) }),
+
+  getListing: (id: string) =>
+    fetchJSON(`/listings/${encodeURIComponent(id)}`),
+
+  // Search & suggest
+  search: (payload: any) =>
+    fetchJSON("/search", { method: "POST", body: JSON.stringify(payload) }),
+
   suggestFuzzy: ({ field, q, limit = 10 }: { field: string; q: string; limit?: number }) =>
-  fetchJSON(`/suggest_fuzzy?field=${encodeURIComponent(field)}&q=${encodeURIComponent(q)}&limit=${limit}`, {
-    method: "GET",
-  }),
-  recWithinLive: (payload: any) => fetchJSON("/recommend/within_filters_live", { method: "POST", body: JSON.stringify(payload) }),
-  recByAttributes: (payload: any) => fetchJSON("/recommend/by_attributes", { method: "POST", body: JSON.stringify(payload) }),
-  recWithinFiltersByAttributes: (payload: any) => fetchJSON("/recommend/within_filters_by_attributes", { method: "POST", body: JSON.stringify(payload) }),
+    fetchJSON(`/suggest_fuzzy?field=${encodeURIComponent(field)}&q=${encodeURIComponent(q)}&limit=${limit}`),
+
+  // Recommendations by existing property
+  recLive: (payload: any) =>
+    fetchJSON("/recommend/by_property_live", { method: "POST", body: JSON.stringify(payload) }),
+
+  recWithinLive: (payload: any) =>
+    fetchJSON("/recommend/within_filters_live", { method: "POST", body: JSON.stringify(payload) }),
+
+  // NEW: Recommendations by attributes (live)
+  recByAttrs: (payload: any) =>
+    fetchJSON("/recommend/by_attributes_live", { method: "POST", body: JSON.stringify(payload) }),
+
+  recWithinByAttrs: (payload: any) =>
+    fetchJSON("/recommend/within_filters_by_attributes_live", { method: "POST", body: JSON.stringify(payload) }),
+
+  // Optional: keep non-live endpoints for compatibility (if backend exposes them)
+  recByAttributes: (payload: any) =>
+    fetchJSON("/recommend/by_attributes", { method: "POST", body: JSON.stringify(payload) }),
+
+  recWithinFiltersByAttributes: (payload: any) =>
+    fetchJSON("/recommend/within_filters_by_attributes", { method: "POST", body: JSON.stringify(payload) }),
 };
+
 
 // Legacy exports for backward compatibility
 export async function apiRequest<T>(
