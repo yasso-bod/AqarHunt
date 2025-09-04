@@ -88,6 +88,111 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       localStorage.removeItem(DRAFT_KEY);
     }
   }, []);
+
+  // Helper function to map form values to API schema
+  const mapToAPISchema = (form: typeof attributesForm) => {
+    // Property type mapping to exact DB values
+    const propertyTypeMap: { [key: string]: string } = {
+      'apartment': 'Apartment',
+      'villa': 'Villa',
+      'townhouse': 'Townhouse',
+      'duplex': 'Duplex',
+      'penthouse': 'Penthouse',
+      'studio': 'Studio',
+      'twin_house': 'Twin House',
+      'chalet': 'Chalet',
+      'standalone_villa': 'Standalone Villa'
+    };
+
+    return {
+      property_type: propertyTypeMap[form.property_type] || form.property_type,
+      city: form.city, // Use exact strings from vocab selectors
+      town: form.town,
+      district_compound: form.district_compound || undefined,
+      furnished: form.furnished ? 'Yes' : 'No',
+      offering_type: form.offering_type === 'sale' ? 'Sale' : 'Rent',
+      bedrooms: form.bedrooms,
+      bathrooms: form.bathrooms,
+      size: form.size,
+      price: form.price || undefined,
+      completion_status: form.completion_status
+    };
+  };
+
+  // Helper function to find seed property
+  const findSeedProperty = async (mappedAttributes: any): Promise<string | null> => {
+    console.log('=== FINDING SEED PROPERTY ===');
+    
+    // Build search payload (don't filter by price for seeding)
+    let searchFilters: SearchFilters = {
+      city: mappedAttributes.city,
+      town: mappedAttributes.town,
+      district_compound: mappedAttributes.district_compound,
+      property_type: mappedAttributes.property_type,
+      furnished: mappedAttributes.furnished === 'Yes',
+      offering_type: mappedAttributes.offering_type.toLowerCase() as 'sale' | 'rent',
+      bedrooms_min: mappedAttributes.bedrooms,
+      bathrooms_min: mappedAttributes.bathrooms
+    };
+
+    // Convert size to band if provided
+    if (mappedAttributes.size) {
+      searchFilters.size_min = Math.round(mappedAttributes.size * 0.8);
+      searchFilters.size_max = Math.round(mappedAttributes.size * 1.2);
+    }
+
+    console.log('Initial search filters:', searchFilters);
+
+    // Progressive relaxation for seed finding
+    const relaxationSteps = [
+      (f: SearchFilters) => ({ ...f }), // Initial strict filters
+      (f: SearchFilters) => ({ ...f, district_compound: undefined }), // Drop compound
+      (f: SearchFilters) => { // Widen size band
+        const newF = { ...f, district_compound: undefined };
+        if (mappedAttributes.size) {
+          newF.size_min = Math.round(mappedAttributes.size * 0.6);
+          newF.size_max = Math.round(mappedAttributes.size * 1.4);
+        }
+        return newF;
+      },
+      (f: SearchFilters) => { // Drop bedrooms/bathrooms
+        const newF = { ...f, district_compound: undefined, bedrooms_min: undefined, bathrooms_min: undefined };
+        if (mappedAttributes.size) {
+          newF.size_min = Math.round(mappedAttributes.size * 0.6);
+          newF.size_max = Math.round(mappedAttributes.size * 1.4);
+        }
+        return newF;
+      },
+      (f: SearchFilters) => ({ // Drop town, keep city + type
+        city: f.city,
+        property_type: f.property_type,
+        offering_type: f.offering_type,
+        furnished: f.furnished
+      })
+    ];
+
+    for (let i = 0; i < relaxationSteps.length; i++) {
+      const relaxedFilters = relaxationSteps[i](searchFilters);
+      console.log(`Relaxation step ${i + 1}:`, relaxedFilters);
+      
+      try {
+        const response = await searchListings(relaxedFilters, 1, 10);
+        console.log(`Step ${i + 1} results:`, response.items.length);
+        
+        if (response.items.length > 0) {
+          const seedId = response.items[0].id;
+          console.log('Found seed property:', seedId);
+          return seedId;
+        }
+      } catch (error) {
+        console.error(`Search step ${i + 1} failed:`, error);
+      }
+    }
+
+    console.log('=== NO SEED PROPERTY FOUND ===');
+    return null;
+  };
+
   const viewOptions = [
     { mode: 'large' as ViewMode, icon: Grid2X2, cols: 'grid-cols-1 sm:grid-cols-2' },
     { mode: 'medium' as ViewMode, icon: LayoutGrid, cols: 'grid-cols-2 sm:grid-cols-3' },
@@ -735,6 +840,10 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
   };
 
   const handleGetRecommendationsByAttributesWithType = async (type: 'similar' | 'filtered') => {
+    console.log('=== STARTING RECOMMENDATION REQUEST ===');
+    console.log('Type:', type);
+    console.log('Form data:', attributesForm);
+    
     // Validate that we have sufficient attributes
     if (!attributesForm.city || !attributesForm.town || !attributesForm.property_type) {
       showToast({
