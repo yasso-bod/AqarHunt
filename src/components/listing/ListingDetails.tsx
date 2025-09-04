@@ -339,6 +339,7 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
             <Stars className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
             {loadingSimilar ? 'Loading...' : t('similarProperties', state.language)}
           </Button>
+        </div>
 
         {/* Contact Seller */}
         <Card className="p-4">
@@ -358,33 +359,21 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
         </Card>
 
         {/* Similar Properties */}
-        {similarPropertiesRequested && (
+        {similarListings.length > 0 && (
           <div className="space-y-4">
             <h3 className="text-h2 font-semibold text-light-text dark:text-dark-text">
               {t('similarProperties', state.language)}
+              {loadingSimilar && (
+                <span className="text-sm font-normal text-light-text/70 dark:text-dark-muted ml-2">
+                  Loading...
+                </span>
+              )}
             </h3>
-            
-            {loadingSimilar ? (
-              <div className="flex justify-center py-8">
-                <div className="flex items-center space-x-2 rtl:space-x-reverse text-light-text/70 dark:text-dark-muted">
-                  <div className="w-4 h-4 border-2 border-light-primary border-t-transparent rounded-full animate-spin" />
-                  <span>Loading similar properties...</span>
-                </div>
-              </div>
-            ) : similarListings.length > 0 ? (
+            {!loadingSimilar && (
               <RecommendationCarousel
                 listings={similarListings}
                 onViewListing={onViewListing}
               />
-            ) : (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 mx-auto mb-4 text-light-primary-400 dark:text-dark-muted">
-                  <Stars className="w-full h-full" />
-                </div>
-                <p className="text-light-text/70 dark:text-dark-muted">
-                  No similar properties found at the moment.
-                </p>
-              </div>
             )}
           </div>
         )}
