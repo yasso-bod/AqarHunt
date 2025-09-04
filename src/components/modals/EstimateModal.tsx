@@ -70,8 +70,9 @@ export function EstimateModal({
           city: formData.city,
           town: formData.town,
           district_compound: formData.district_compound,
+          district_compound: formData.district_compound,
           property_type: formData.property_type,
-          furnishing: formData.furnished ? 'Yes' : 'No',
+          furnishing: 'No', // Default value since furnished is not in the form
           completion_status: 'Completed', // Map to API format
           offering_type: formData.offering_type === 'sale' ? 'Sale' : 'Rent',
           bedrooms: formData.bedrooms,
