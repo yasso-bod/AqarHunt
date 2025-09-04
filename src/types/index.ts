@@ -26,6 +26,8 @@ export interface SearchFilters {
   district_compound?: string;
   price_min?: number;
   price_max?: number;
+  size_min?: number;
+  size_max?: number;
   bedrooms_min?: number;
   bathrooms_min?: number;
   property_type?: string;

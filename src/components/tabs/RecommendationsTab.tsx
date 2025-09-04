@@ -234,33 +234,73 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       setLoading(true);
       setRecommendationType(attributesRecommendationType);
       
-      // Step 1: Build filters from form values
+      // Step 1: Build search filters from form values with proper API formatting
       const searchFilters: any = {};
       
       if (attributesForm.city.trim()) searchFilters.city = attributesForm.city.trim();
       if (attributesForm.town.trim()) searchFilters.town = attributesForm.town.trim();
       if (attributesForm.district_compound.trim()) searchFilters.district_compound = attributesForm.district_compound.trim();
-      if (attributesForm.property_type) searchFilters.property_type = attributesForm.property_type.charAt(0).toUpperCase() + attributesForm.property_type.slice(1);
-      if (attributesForm.offering_type) searchFilters.offering_type = attributesForm.offering_type.charAt(0).toUpperCase() + attributesForm.offering_type.slice(1);
-      if (attributesForm.furnished !== undefined) searchFilters.furnished = attributesForm.furnished ? 'Yes' : 'No';
-      if (attributesForm.bedrooms) searchFilters.bedrooms_min = attributesForm.bedrooms;
-      if (attributesForm.bathrooms) searchFilters.bathrooms_min = attributesForm.bathrooms;
-      if (attributesForm.price) {
-        const price = Number(attributesForm.price);
-        searchFilters.price_min = Math.max(0, price * 0.8); // 20% below
-        searchFilters.price_max = price * 1.2; // 20% above
+      
+      // Property type mapping to match API expectations
+      const propertyTypeMap: { [key: string]: string } = {
+        'apartment': 'Apartment',
+        'villa': 'Villa',
+        'penthouse': 'Penthouse',
+        'chalet': 'Chalet',
+        'studio': 'Studio',
+        'duplex': 'Duplex',
+        'townhouse': 'Townhouse',
+        'twin_house': 'Twin House',
+        'standalone_villa': 'Standalone Villa'
+      };
+      
+      if (attributesForm.property_type) {
+        searchFilters.property_type = propertyTypeMap[attributesForm.property_type] || 
+          attributesForm.property_type.charAt(0).toUpperCase() + attributesForm.property_type.slice(1);
       }
       
-      // Step 2: Find a seed property using search
+      if (attributesForm.offering_type) {
+        searchFilters.offering_type = attributesForm.offering_type.charAt(0).toUpperCase() + attributesForm.offering_type.slice(1);
+      }
+      
+      if (attributesForm.furnished !== undefined) {
+        searchFilters.furnished = attributesForm.furnished ? 'Furnished' : 'No';
+      }
+      
+      if (attributesForm.bedrooms) searchFilters.bedrooms_min = attributesForm.bedrooms;
+      if (attributesForm.bathrooms) searchFilters.bathrooms_min = attributesForm.bathrooms;
+      
+      // Add size filter if specified
+      if (attributesForm.size) {
+        searchFilters.size_min = Math.max(1, attributesForm.size * 0.8); // 20% smaller
+        searchFilters.size_max = attributesForm.size * 1.2; // 20% larger
+      }
+      
+      // Price range filter
+      if (attributesForm.price) {
+        const price = Number(attributesForm.price);
+        if (price > 0) {
+          searchFilters.price_min = Math.max(0, price * 0.8); // 20% below
+          searchFilters.price_max = price * 1.2; // 20% above
+        }
+      }
+      
+      console.log('Built search filters:', searchFilters);
+      
+      // Step 2: Find a seed property using search with progressive relaxation
       let seedPropertyId: string | null = null;
       let attempts = 0;
       const maxAttempts = 3;
+      let currentFilters = { ...searchFilters };
       
       while (!seedPropertyId && attempts < maxAttempts) {
         try {
-          const searchResponse = await searchListings(searchFilters, 1, 1);
+          console.log(`Search attempt ${attempts + 1} with filters:`, currentFilters);
+          const searchResponse = await searchListings(currentFilters, 1, 10); // Get more results to increase chances
+          
           if (searchResponse.items.length > 0) {
             seedPropertyId = searchResponse.items[0].id;
+            console.log('Found seed property:', seedPropertyId);
             break;
           }
         } catch (error) {
@@ -269,19 +309,32 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
         
         attempts++;
         
-        // Progressively relax constraints
-        if (attempts === 1 && searchFilters.district_compound) {
-          delete searchFilters.district_compound;
-        } else if (attempts === 2 && searchFilters.town) {
-          delete searchFilters.town;
+        // Progressively relax constraints for next attempt
+        if (attempts === 1) {
+          // Remove compound and size constraints
+          if (currentFilters.district_compound) delete currentFilters.district_compound;
+          if (currentFilters.size_min) delete currentFilters.size_min;
+          if (currentFilters.size_max) delete currentFilters.size_max;
+        } else if (attempts === 2) {
+          // Remove town and price constraints
+          if (currentFilters.town) delete currentFilters.town;
+          if (currentFilters.price_min) delete currentFilters.price_min;
+          if (currentFilters.price_max) delete currentFilters.price_max;
+        } else if (attempts === 3) {
+          // Keep only city and property type
+          currentFilters = {
+            city: searchFilters.city,
+            property_type: searchFilters.property_type
+          };
         }
       }
       
       if (!seedPropertyId) {
+        console.error('No seed property found after all attempts');
         showToast({
           type: 'error',
           title: 'No matching properties found',
-          message: 'Try adjusting your criteria or location',
+          message: 'Try adjusting your criteria, especially location details',
         });
         setRecommendations([]);
         return;
@@ -289,12 +342,37 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
       
       // Step 3: Get recommendations using the seed property
       if (attributesRecommendationType === 'filtered') {
-        // Use recommendations-specific filters
+        // Build filters for recommendations API (different from search filters)
+        const recFilters: any = {};
+        
+        // Only include filters that are actually set in recsFilters
+        if (recsFilters.city) recFilters.city = recsFilters.city;
+        if (recsFilters.town) recFilters.town = recsFilters.town;
+        if (recsFilters.district_compound) recFilters.district_compound = recsFilters.district_compound;
+        if (recsFilters.price_min !== undefined) recFilters.price_min = recsFilters.price_min;
+        if (recsFilters.price_max !== undefined) recFilters.price_max = recsFilters.price_max;
+        if (recsFilters.bedrooms_min !== undefined) recFilters.bedrooms_min = recsFilters.bedrooms_min;
+        if (recsFilters.bathrooms_min !== undefined) recFilters.bathrooms_min = recsFilters.bathrooms_min;
+        if (recsFilters.property_type) {
+          recFilters.property_type = propertyTypeMap[recsFilters.property_type] || 
+            recsFilters.property_type.charAt(0).toUpperCase() + recsFilters.property_type.slice(1);
+        }
+        if (recsFilters.furnished !== undefined) {
+          recFilters.furnished = recsFilters.furnished ? 'Furnished' : 'No';
+        }
+        if (recsFilters.offering_type) {
+          recFilters.offering_type = recsFilters.offering_type.charAt(0).toUpperCase() + recsFilters.offering_type.slice(1);
+        }
+        
+        console.log('Using recommendations filters:', recFilters);
+        
         const response = await api.recWithinLive({ 
           property_id: seedPropertyId, 
           top_k: 10, 
-          filters: recsFilters 
+          filters: recFilters 
         });
+        
+        console.log('Recommendations response:', response);
         
         // Extract property IDs and fetch full details
         const propertyIds = response.items?.map((item: any) => String(item.property_id)) || [];
@@ -303,12 +381,14 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
           setRecommendations([]);
           showToast({
             type: 'info',
-            title: 'No results under current filters',
-            message: 'Try relaxing your search filters.',
+            title: 'No similar properties found with current filters',
+            message: 'Try using "Similar (Live)" instead or adjust your filters.',
           });
           return;
         }
         
+        console.log('Found property IDs:', propertyIds);
+        
         const detailsPromises = propertyIds.map(async (id: string) => {
           try {
             return await getListing(id);
@@ -320,17 +400,30 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
         
         const fullListings = await Promise.all(detailsPromises);
         const validListings = fullListings.filter(Boolean) as Listing[];
+        
+        console.log('Loaded full listings:', validListings.length);
         setRecommendations(validListings);
       } else {
         // Similar recommendations (no filters)
+        console.log('Getting similar recommendations for property:', seedPropertyId);
         const response = await api.recLive({ property_id: seedPropertyId, top_k: 10 });
+        
+        console.log('Similar recommendations response:', response);
         
         const propertyIds = response.items?.map((item: any) => String(item.property_id)) || [];
         
         if (propertyIds.length === 0) {
+          console.warn('No similar properties found');
           setRecommendations([]);
+          showToast({
+            type: 'info',
+            title: 'No similar properties found',
+            message: 'Try adjusting your property description or location.',
+          });
           return;
         }
+        
+        console.log('Found similar property IDs:', propertyIds);
         
         const detailsPromises = propertyIds.map(async (id: string) => {
           try {
@@ -343,11 +436,15 @@ export function RecommendationsTab({ onViewListing }: RecommendationsTabProps) {
         
         const fullListings = await Promise.all(detailsPromises);
         const validListings = fullListings.filter(Boolean) as Listing[];
+        
+        console.log('Loaded similar listings:', validListings.length);
         setRecommendations(validListings);
       }
       
       // Clear draft on successful submission
-      localStorage.removeItem(DRAFT_KEY);
+      if (recommendations.length > 0) {
+        localStorage.removeItem(DRAFT_KEY);
+      }
       
     } catch (error) {
       console.error('Failed to get recommendations by attributes:', error);

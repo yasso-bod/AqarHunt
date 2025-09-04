@@ -27,6 +27,8 @@ function normalizeFilters(filters: SearchFilters & { limit?: number; page?: numb
 
   add("price_min", toNumber(filters.price_min));
   add("price_max", toNumber(filters.price_max));
+  add("size_min", toNumber(filters.size_min));
+  add("size_max", toNumber(filters.size_max));
   add("bedrooms_min", toInt(filters.bedrooms_min));
   add("bathrooms_min", toInt(filters.bathrooms_min));
 
@@ -41,7 +43,9 @@ function normalizeFilters(filters: SearchFilters & { limit?: number; page?: numb
       'townhouse': 'Townhouse',
       'penthouse': 'Penthouse',
       'duplex': 'Duplex',
-      'chalet': 'Chalet'
+      'chalet': 'Chalet',
+      'twin_house': 'Twin House',
+      'standalone_villa': 'Standalone Villa'
     };
     add("property_type", propertyTypeMap[normalizedType] || titleCase(filters.property_type));
   }
