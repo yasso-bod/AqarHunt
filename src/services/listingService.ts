@@ -218,6 +218,11 @@ export async function predictPrice(data: {
   lon: number;
   down_payment_price?: number;
 }): Promise<PricePredictionResponse> {
+  // Validate required offering_type parameter
+  if (!data.offering_type || (data.offering_type !== 'Sale' && data.offering_type !== 'Rent')) {
+    throw new Error('Offering type must be either "Sale" or "Rent"');
+  }
+  
   return api.predict(data);
 }
 

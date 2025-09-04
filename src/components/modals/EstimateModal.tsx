@@ -34,6 +34,7 @@ export function EstimateModal({
     town: initialData?.town || '',
     district_compound: initialData?.district_compound || '',
     property_type: initialData?.property_type || 'apartment',
+    offering_type: initialData?.offering_type || 'sale',
     bedrooms: initialData?.bedrooms || 2,
     bathrooms: initialData?.bathrooms || 1,
     size: initialData?.size || 100,
@@ -49,6 +50,7 @@ export function EstimateModal({
         town: initialData.town || '',
         district_compound: initialData.district_compound || '',
         property_type: initialData.property_type || 'apartment',
+        offering_type: initialData.offering_type || 'sale',
         bedrooms: initialData.bedrooms || 2,
         bathrooms: initialData.bathrooms || 1,
         size: initialData.size || 100,
@@ -71,7 +73,7 @@ export function EstimateModal({
           property_type: formData.property_type,
           furnishing: formData.furnished ? 'Yes' : 'No',
           completion_status: 'Completed', // Map to API format
-          offering_type: 'Sale', // Default for estimates
+          offering_type: formData.offering_type === 'sale' ? 'Sale' : 'Rent',
           bedrooms: formData.bedrooms,
           bathrooms: formData.bathrooms,
           size: formData.size,
@@ -154,6 +156,20 @@ export function EstimateModal({
                 {propertyTypes.map(type => (
                   <option key={type.value} value={type.value}>{type.label}</option>
                 ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">
+                {t('offering', state.language)}
+              </label>
+              <select
+                value={formData.offering_type}
+                onChange={(e) => setFormData(prev => ({ ...prev, offering_type: e.target.value }))}
+                className="w-full px-4 py-3 bg-white dark:bg-dark-surface border border-light-border dark:border-dark-muted rounded-aqar text-light-text dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-light-primary"
+              >
+                <option value="sale">{t('sale', state.language)}</option>
+                <option value="rent">{t('rent', state.language)}</option>
               </select>
             </div>
 
