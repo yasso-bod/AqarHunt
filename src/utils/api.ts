@@ -113,3 +113,9 @@ export async function apiRequest<T>(
   }
   return fetchJSON(endpoint, options);
 }
+  suggestFuzzy: (payload: any) =>
+    fetchJSON("/suggest_fuzzy", { method: "POST", body: JSON.stringify(payload) }),
+  recByAttributesLive: (payload: any) =>
+    fetchJSON("/recommend/by_attributes_live", { method: "POST", body: JSON.stringify(payload) }),
+  recWithinFiltersByAttributesLive: (payload: any) =>
+    fetchJSON("/recommend/within_filters_by_attributes_live", { method: "POST", body: JSON.stringify(payload) }),
