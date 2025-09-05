@@ -1,5 +1,5 @@
 // API Configuration
-export const API_BASE_URL = 'https://5f0ace1b1dfe.ngrok-free.app';
+export const API_BASE_URL = 'https://06f1bdb0b04b.ngrok-free.app';
 export const API_KEY = 'secret123';
 
 // API endpoints
@@ -32,5 +32,5 @@ export const RETRY_CONFIG = {
 const _PREVIOUS_API_BASE_URLS = [
   'http://localhost:8000', // Local development
   'http://127.0.0.1:8000', // Alternative local
-  'https://5f0ace1b1dfe.ngrok-free.app', // Previous ngrok URL (may be expired)
+  'https://06f1bdb0b04b.ngrok-free.app', // Previous ngrok URL (may be expired)
 ];
