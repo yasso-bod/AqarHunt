@@ -145,7 +145,7 @@ export async function getListing(id: string): Promise<Listing> {
   return api.get<Listing>(`/listings/${encodeURIComponent(id)}`);
 }
 
-// ---------- Suggestions (needed by SearchBar) ----------
+// ---------- Suggestions (used by SearchBar) ----------
 export async function getSuggestions(
   field: 'city' | 'town' | 'district_compound',
   query: string,
@@ -204,6 +204,49 @@ export async function getOmniSuggestions(
   });
 
   return deduped.slice(0, limit);
+}
+
+// ---------- Price prediction & create listing (needed by EstimateModal / CreateListing) ----------
+export async function predictPrice(data: {
+  city: string;
+  town: string;
+  district_compound: string;
+  property_type: string;
+  furnishing: string;          // NOTE: "furnishing" for /predict_price
+  completion_status: string;
+  offering_type: string;       // "Sale" | "Rent"
+  bedrooms: number;
+  bathrooms: number;
+  size: number;
+  lat: number;
+  lon: number;
+  down_payment_price?: number;
+}): Promise<PricePredictionResponse> {
+  // Validate offering_type early (common source of server 4xx)
+  const ot = (data.offering_type || '').toLowerCase();
+  if (ot !== 'sale' && ot !== 'rent') {
+    throw new Error('Offering type must be either "Sale" or "Rent"');
+  }
+  return api.predict(data);
+}
+
+export async function createListing(data: {
+  property_type: string;
+  city: string;
+  town: string;
+  district_compound: string;
+  completion_status: string;
+  offering_type: string;
+  furnished: string;           // NOTE: "furnished" for /listings/create
+  lat: number;
+  lon: number;
+  bedrooms: number;
+  bathrooms: number;
+  size: number;
+  down_payment_price?: number;
+  price?: number;
+}): Promise<CreateListingResponse> {
+  return api.createListing(data);
 }
 
 // ---------- Recommendations ----------
