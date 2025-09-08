@@ -1,14 +1,18 @@
-// API Configuration
-export const API_BASE_URL = 'https://06f1bdb0b04b.ngrok-free.app';
-export const API_KEY = 'secret123';
+// FRONTEND-ONLY SWITCH
+// When true, the app runs entirely on mock data (no network calls).
+// Your friend can flip this to false and fill API_BASE_URL to use a real .NET backend.
+export const USE_MOCK_API = true;
 
-// API endpoints
+// Used ONLY when USE_MOCK_API === false
+export const API_BASE_URL = 'http://localhost:5000';
+export const API_KEY = '';
+
 export const API_ENDPOINTS = {
   health: '/health',
   search: '/search',
   suggest: '/suggest',
   suggestFuzzy: '/suggest_fuzzy',
-  listing: (id: string | number) => `/listings/${id}`,
+  listing: (id: string | number) => /listings/${id},
   predictPrice: '/predict_price',
   predictPriceBatch: '/predict_price/batch',
   createListing: '/listings/create',
@@ -17,20 +21,14 @@ export const API_ENDPOINTS = {
   recommendByPropertyLive: '/recommend/by_property_live',
   recommendWithinFilters: '/recommend/within_filters',
   recommendWithinFiltersLive: '/recommend/within_filters_live',
+  recommendByAttributes: '/recommend/by_attributes',
+  recommendWithinFiltersByAttributes: '/recommend/within_filters_by_attributes',
 } as const;
 
-// Request timeout in milliseconds
 export const REQUEST_TIMEOUT = 30000;
 
 export const RETRY_CONFIG = {
   maxRetries: 2,
-  baseDelay: 1000, // 1 second
-  maxDelay: 5000,  // 5 seconds
+  baseDelay: 1000,
+  maxDelay: 5000,
 };
-
-// Optional: keep history but DON'T export it
-const _PREVIOUS_API_BASE_URLS = [
-  'http://localhost:8000', // Local development
-  'http://127.0.0.1:8000', // Alternative local
-  'https://06f1bdb0b04b.ngrok-free.app', // Previous ngrok URL (may be expired)
-];
