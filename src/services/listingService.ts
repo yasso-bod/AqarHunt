@@ -4,8 +4,9 @@ import { Listing, SearchFilters } from '../types';
 // ---------- helpers ----------
 function titleCase(s?: string) {
   if (!s) return s;
-  return s.toLowerCase().replace(/\b\w/g, m => m.toUpperCase());
+  return s.toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase());
 }
+
 function dedupeListings(list: Listing[]) {
   const seen = new Set<string>();
   const out: Listing[] = [];
@@ -18,6 +19,7 @@ function dedupeListings(list: Listing[]) {
   }
   return out;
 }
+
 export function rankByCloseness(seed: Partial<Listing>, arr: Listing[]) {
   const sBeds = Number(seed.bedrooms) || 0;
   const sBaths = Number(seed.bathrooms) || 0;
@@ -30,9 +32,7 @@ export function rankByCloseness(seed: Partial<Listing>, arr: Listing[]) {
     const xCity = (x.city || '').toLowerCase();
     const xTown = (x.town || '').toLowerCase();
     const xType = String(x.property_type || '').toLowerCase();
-    const loc =
-      (xCity === sCity ? 8 : 0) +
-      (xTown === sTown ? 8 : 0);
+    const loc = (xCity === sCity ? 8 : 0) + (xTown === sTown ? 8 : 0);
     const typ = xType === sType ? 6 : 0;
     const beds = -Math.abs((Number(x.bedrooms) || 0) - sBeds) * 2;
     const baths = -Math.abs((Number(x.bathrooms) || 0) - sBaths) * 1.5;
@@ -60,13 +60,16 @@ function normalizeFilters(filters: SearchFilters & { limit?: number; page?: numb
   add('district_compound', filters.district_compound?.trim());
 
   // numerics
-  const toNumber = (x: any) => (x === '' || x === undefined || x === null) ? undefined : Number(x);
-  const toInt = (x: any) => (x === '' || x === undefined || x === null) ? undefined : parseInt(String(x), 10);
+  const toNumber = (x: any) =>
+    x === '' || x === undefined || x === null ? undefined : Number(x);
+  const toInt = (x: any) =>
+    x === '' || x === undefined || x === null ? undefined : parseInt(String(x), 10);
+
   add('price_min', toNumber(filters.price_min));
   add('price_max', toNumber(filters.price_max));
-  add('size_min',  toNumber(filters.size_min));
-  add('size_max',  toNumber(filters.size_max));
-  add('bedrooms_min',  toInt(filters.bedrooms_min));
+  add('size_min', toNumber(filters.size_min));
+  add('size_max', toNumber(filters.size_max));
+  add('bedrooms_min', toInt(filters.bedrooms_min));
   add('bathrooms_min', toInt(filters.bathrooms_min));
 
   // property type
@@ -112,8 +115,16 @@ export interface SearchResponse {
   limit: number;
   count: number;
 }
-export interface PricePredictionResponse { predicted_price_egp: number; model_version: string; }
-export interface CreateListingResponse { id: string; estimated_price_egp: number; final_price_saved: number; used_asking_price: boolean; }
+export interface PricePredictionResponse {
+  predicted_price_egp: number;
+  model_version: string;
+}
+export interface CreateListingResponse {
+  id: string;
+  estimated_price_egp: number;
+  final_price_saved: number;
+  used_asking_price: boolean;
+}
 
 // ---------- Core endpoints you already have ----------
 export async function searchListings(
@@ -134,11 +145,14 @@ export async function getListing(id: string): Promise<Listing> {
   return api.get<Listing>(/listings/${encodeURIComponent(id)});
 }
 
-export async function getRecommendationsByPropertyLive(propertyId: string, topK = 10): Promise<Listing[]> {
+export async function getRecommendationsByPropertyLive(
+  propertyId: string,
+  topK = 10
+): Promise<Listing[]> {
   const response = await api.recLive({ property_id: propertyId, top_k: topK });
   const ids: string[] = (response?.items || []).map((x: any) => String(x.property_id));
   if (!ids.length) return [];
-  const details = await Promise.all(ids.map(id => getListing(id).catch(() => null)));
+  const details = await Promise.all(ids.map((id) => getListing(id).catch(() => null)));
   return details.filter(Boolean) as Listing[];
 }
 
@@ -150,7 +164,7 @@ export async function getRecommendationsWithinFiltersLive(
   const response = await api.recWithinLive({ property_id: propertyId, top_k: topK, filters });
   const ids: string[] = (response?.items || []).map((x: any) => String(x.property_id));
   if (!ids.length) return [];
-  const details = await Promise.all(ids.map(id => getListing(id).catch(() => null)));
+  const details = await Promise.all(ids.map((id) => getListing(id).catch(() => null)));
   return details.filter(Boolean) as Listing[];
 }
 
@@ -166,12 +180,11 @@ export async function getSimilarFromSeeds(seeds: string[], perSeed = 6, maxTotal
 }
 
 export async function getTrendingNear(city?: string, town?: string, limit = 12) {
-  // Simple fallback: search by location or global if not present
   const res = await searchListings({
     city,
     town,
     limit,
-    page: 1
+    page: 1,
   });
   return res.items || [];
 }
