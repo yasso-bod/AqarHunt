@@ -5,16 +5,26 @@ import { useApp } from '../../contexts/AppContext';
 import { t } from '../../utils/translations';
 import { Listing } from '../../types';
 import { cn } from '../../utils/cn';
-import { logSave } from '../../utils/interactionStore';
 
 // Helper function to translate city names
-const translateCity = (city: string, _language: string) => city;
+const translateCity = (city: string, language: string) => {
+  // Revert to English for all locations until proper Arabic localization is implemented
+  return city;
+};
+
 // Helper function to translate town/area names
-const translateTown = (town: string, _language: string) => town;
+const translateTown = (town: string, language: string) => {
+  // Revert to English for all locations until proper Arabic localization is implemented
+  return town;
+};
+
 // Helper function to translate offering type
 const translateOfferingType = (offeringType: string, language: string) => {
-  if (offeringType === 'sale') return language === 'ar' ? 'بيع' : 'Sale';
-  if (offeringType === 'rent') return language === 'ar' ? 'إيجار' : 'Rent';
+  if (offeringType === 'sale') {
+    return language === 'ar' ? 'بيع' : 'Sale';
+  } else if (offeringType === 'rent') {
+    return language === 'ar' ? 'إيجار' : 'Rent';
+  }
   return offeringType;
 };
 
@@ -24,10 +34,14 @@ interface ListingCardProps {
   variant?: 'extra-large' | 'large' | 'medium' | 'small' | 'compact' | 'list';
 }
 
-// Normalize property type display
+// Helper function to normalize property type display
 function normalizePropertyType(propertyType: string): string {
   if (!propertyType) return 'apartment';
+  
+  // Convert to lowercase for consistent comparison
   const normalized = propertyType.toLowerCase().trim();
+  
+  // Handle various API response formats
   const typeMap: { [key: string]: string } = {
     'apartment': 'apartment',
     'villa': 'villa',
@@ -36,13 +50,15 @@ function normalizePropertyType(propertyType: string): string {
     'penthouse': 'penthouse',
     'duplex': 'duplex',
     'chalet': 'chalet',
-    'twin_house': 'townhouse',
+    'twin_house': 'townhouse', // Map twin_house to townhouse for display
     'twin house': 'townhouse',
-    'standalone_villa': 'villa',
+    'standalone_villa': 'villa', // Map standalone_villa to villa for display
     'standalone villa': 'villa',
+    // Handle potential API variations
     'pent house': 'penthouse',
     'town house': 'townhouse',
   };
+  
   return typeMap[normalized] || normalized;
 }
 
@@ -52,19 +68,27 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
 
   const handleSaveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const willSaveNow = !isSaved;
     toggleSavedListing(listing.id);
-    if (willSaveNow) logSave(String(listing.id));
   };
 
   const formatPrice = (price?: number) => {
     if (!price) return 'Price on request';
     return `${price.toLocaleString()} ${t('egp', state.language)}`;
   };
-  const formatBedrooms = (bedrooms?: number) => bedrooms || 0;
-  const formatBathrooms = (bathrooms?: number) => bathrooms || 0;
-  const formatSize = (size?: number) => size || 0;
 
+  const formatBedrooms = (bedrooms?: number) => {
+    return bedrooms || 0;
+  };
+
+  const formatBathrooms = (bathrooms?: number) => {
+    return bathrooms || 0;
+  };
+
+  const formatSize = (size?: number) => {
+    return size || 0;
+  };
+  
+  // Get normalized property type for consistent display
   const normalizedPropertyType = normalizePropertyType(listing.property_type);
 
   const getImageAspect = () => {
@@ -77,8 +101,21 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
       default: return 'aspect-[4/3]';
     }
   };
-  const getCardLayout = () => variant === 'list' ? 'flex flex-row' : 'flex flex-col';
-  const getImageContainer = () => variant === 'list' ? 'w-32 sm:w-48 flex-shrink-0' : 'w-full';
+
+  const getCardLayout = () => {
+    if (variant === 'list') {
+      return 'flex flex-row';
+    }
+    return 'flex flex-col';
+  };
+
+  const getImageContainer = () => {
+    if (variant === 'list') {
+      return 'w-32 sm:w-48 flex-shrink-0';
+    }
+    return 'w-full';
+  };
+
   const getContentPadding = () => {
     switch (variant) {
       case 'extra-large': return 'p-6';
@@ -89,6 +126,7 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
       default: return 'p-3';
     }
   };
+
   const getTextSize = () => {
     switch (variant) {
       case 'extra-large': return { title: 'text-lg', details: 'text-base', meta: 'text-sm' };
@@ -99,6 +137,7 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
       default: return { title: 'text-sm', details: 'text-xs', meta: 'text-xs' };
     }
   };
+
   const textSizes = getTextSize();
 
   return (
@@ -118,14 +157,16 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
               </span>
             </div>
           )}
-
+          
           {/* Save Button */}
           <button
             onClick={handleSaveClick}
             className={cn(
               'absolute top-2 right-2 rtl:right-auto rtl:left-2 rounded-full flex items-center justify-center transition-all',
               variant === 'small' ? 'w-6 h-6' : 'w-8 h-8',
-              isSaved ? 'bg-light-highlight text-white' : 'bg-white/80 text-light-text hover:bg-white'
+              isSaved
+                ? 'bg-light-highlight text-white'
+                : 'bg-white/80 text-light-text hover:bg-white'
             )}
           >
             <Heart className={cn(variant === 'small' ? 'w-3 h-3' : 'w-4 h-4', isSaved && 'fill-current')} />
@@ -144,7 +185,7 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
             'absolute bottom-2 left-2 rtl:left-auto rtl:right-2 bg-black/70 text-white rounded-full font-bold',
             variant === 'small' ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-sm'
           )}>
-            {variant === 'small'
+            {variant === 'small' 
               ? `${Math.round((listing.price || listing.estimated_price || 0) / 1000)}K`
               : formatPrice(listing.price || listing.estimated_price)
             }
@@ -158,7 +199,7 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
           <h3 className={cn('font-semibold text-light-text dark:text-dark-text capitalize', textSizes.title)}>
             {t(normalizedPropertyType, state.language)} • {formatBedrooms(listing.bedrooms)} {t('br', state.language)} • {formatSize(listing.size)} {t('squareMeters', state.language)}
           </h3>
-
+          
           <div className={cn('flex items-center text-light-text/70 dark:text-dark-muted', textSizes.meta)}>
             <MapPin className={cn('mr-1 rtl:mr-0 rtl:ml-1', variant === 'small' ? 'w-3 h-3' : 'w-4 h-4')} />
             <span>
@@ -184,7 +225,7 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
                 <span>{formatSize(listing.size)}{t('squareMeters', state.language)}</span>
               </div>
             </div>
-
+            
             <span className="text-light-primary dark:text-dark-primary font-medium">
               {translateOfferingType(listing.offering_type || 'sale', state.language)}
             </span>
