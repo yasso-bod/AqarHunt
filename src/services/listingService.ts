@@ -126,7 +126,7 @@ export interface CreateListingResponse {
   used_asking_price: boolean;
 }
 
-// ---------- Core endpoints you already have ----------
+// ---------- Search ----------
 export async function searchListings(
   filters: SearchFilters & { limit?: number; page?: number } = {},
   page?: number,
@@ -145,6 +145,68 @@ export async function getListing(id: string): Promise<Listing> {
   return api.get<Listing>(`/listings/${encodeURIComponent(id)}`);
 }
 
+// ---------- Suggestions (needed by SearchBar) ----------
+export async function getSuggestions(
+  field: 'city' | 'town' | 'district_compound',
+  query: string,
+  limit = 10
+): Promise<string[]> {
+  const params = { field, q: query, limit: String(limit) };
+  const res = await api.get<{ items: string[] }>('/suggest', params);
+  return res.items || [];
+}
+
+export async function getSingleFieldSuggestions(
+  field: 'city' | 'town' | 'district_compound',
+  query: string,
+  limit = 10
+): Promise<string[]> {
+  if (!query.trim()) return [];
+  const params = { field, q: query, limit: String(limit) };
+  const res = await api.get<{ items: string[] }>('/suggest_fuzzy', params);
+  const suggestions = res.items || [];
+  return suggestions.sort((a, b) => {
+    const q = query.toLowerCase();
+    const aL = a.toLowerCase();
+    const bL = b.toLowerCase();
+    const aExact = aL === q;
+    const bExact = bL === q;
+    if (aExact !== bExact) return aExact ? -1 : 1;
+    const aStarts = aL.startsWith(q);
+    const bStarts = bL.startsWith(q);
+    if (aStarts !== bStarts) return aStarts ? -1 : 1;
+    return 0;
+  });
+}
+
+export async function getOmniSuggestions(
+  query: string,
+  limit = 10
+): Promise<{ field: 'city' | 'town' | 'district_compound'; value: string }[]> {
+  if (!query.trim()) return [];
+  const [c, t, d] = await Promise.allSettled([
+    getSingleFieldSuggestions('city', query, 5),
+    getSingleFieldSuggestions('town', query, 5),
+    getSingleFieldSuggestions('district_compound', query, 5),
+  ]);
+
+  const out: { field: 'city' | 'town' | 'district_compound'; value: string }[] = [];
+  if (c.status === 'fulfilled') c.value.forEach((v) => out.push({ field: 'city', value: v }));
+  if (t.status === 'fulfilled') t.value.forEach((v) => out.push({ field: 'town', value: v }));
+  if (d.status === 'fulfilled') d.value.forEach((v) => out.push({ field: 'district_compound', value: v }));
+
+  const seen = new Set<string>();
+  const deduped = out.filter((x) => {
+    const k = `${x.field}:${x.value}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+
+  return deduped.slice(0, limit);
+}
+
+// ---------- Recommendations ----------
 export async function getRecommendationsByPropertyLive(
   propertyId: string,
   topK = 10
@@ -186,5 +248,5 @@ export async function getTrendingNear(city?: string, town?: string, limit = 12) 
     limit,
     page: 1,
   });
-  return res.items || [];
+  return res.items || [];
 }
