@@ -2,10 +2,10 @@ import React from 'react';
 import { X, Filter } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { SearchBar } from './SearchBar';
 import { useApp } from '../../contexts/AppContext';
 import { t } from '../../utils/translations';
-import { getUniqueCities, getUniqueTowns, getUniqueCompounds } from '../../data/mockListings';
+import { getSingleFieldSuggestions } from '../../services/listingService';
+import { useDebounce } from '../../hooks/useDebounce';
 
 interface FilterDrawerProps {
   isOpen: boolean;
@@ -15,6 +15,14 @@ interface FilterDrawerProps {
 export function FilterDrawer({ isOpen, onClose }: FilterDrawerProps) {
   const { state, setSearchFilters } = useApp();
   const [localFilters, setLocalFilters] = React.useState(state.searchFilters);
+  const [citySuggestions, setCitySuggestions] = React.useState<string[]>([]);
+  const [townSuggestions, setTownSuggestions] = React.useState<string[]>([]);
+  const [cityQuery, setCityQuery] = React.useState('');
+  const [townQuery, setTownQuery] = React.useState('');
+
+  // Debounce queries
+  const debouncedCityQuery = useDebounce(cityQuery, 300);
+  const debouncedTownQuery = useDebounce(townQuery, 300);
 
   React.useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
@@ -32,12 +40,38 @@ export function FilterDrawer({ isOpen, onClose }: FilterDrawerProps) {
     };
   }, [isOpen, onClose]);
 
+  // Load city suggestions
+  React.useEffect(() => {
+    if (debouncedCityQuery.trim()) {
+      getSingleFieldSuggestions('city', debouncedCityQuery, 10)
+        .then(setCitySuggestions)
+        .catch(console.error);
+    } else {
+      setCitySuggestions([]);
+    }
+  }, [debouncedCityQuery]);
+
+  // Load town suggestions
+  React.useEffect(() => {
+    if (debouncedTownQuery.trim()) {
+      getSingleFieldSuggestions('town', debouncedTownQuery, 10)
+        .then(setTownSuggestions)
+        .catch(console.error);
+    } else {
+      setTownSuggestions([]);
+    }
+  }, [debouncedTownQuery]);
+
   const propertyTypes = [
-    { value: 'apartment', label: 'Apartment' },
-    { value: 'villa', label: 'Villa' },
-    { value: 'studio', label: 'Studio' },
-    { value: 'townhouse', label: 'Townhouse' },
-    { value: 'penthouse', label: 'Penthouse' },
+    { value: 'Apartment', label: 'Apartment' },
+    { value: 'Villa', label: 'Villa' },
+    { value: 'Studio', label: 'Studio' },
+    { value: 'Townhouse', label: 'Townhouse' },
+    { value: 'Penthouse', label: 'Penthouse' },
+    { value: 'Duplex', label: 'Duplex' },
+    { value: 'Chalet', label: 'Chalet' },
+    { value: 'Twin_House', label: 'Twin House' },
+    { value: 'Standalone_Villa', label: 'Standalone Villa' },
   ];
 
   const handleApplyFilters = () => {
@@ -46,8 +80,8 @@ export function FilterDrawer({ isOpen, onClose }: FilterDrawerProps) {
   };
 
   const handleClearFilters = () => {
-    setLocalFilters({});
     setSearchFilters({});
+    setLocalFilters({});
   };
 
   if (!isOpen) return null;
@@ -86,32 +120,68 @@ export function FilterDrawer({ isOpen, onClose }: FilterDrawerProps) {
                 <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">
                   {t('city', state.language)}
                 </label>
-                <select
+                <input
+                  type="text"
                   value={localFilters.city || ''}
-                  onChange={(e) => setLocalFilters(prev => ({ ...prev, city: e.target.value || undefined }))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setLocalFilters(prev => ({ ...prev, city: value || undefined }));
+                    setCityQuery(value);
+                  }}
+                  placeholder="Type to search cities..."
                   className="w-full px-4 py-3 bg-white dark:bg-dark-surface border border-light-border dark:border-dark-muted rounded-aqar text-light-text dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-light-primary"
-                >
-                  <option value="">All Cities</option>
-                  {getUniqueCities().map(city => (
-                    <option key={city} value={city}>{city}</option>
-                  ))}
-                </select>
+                />
+                {citySuggestions.length > 0 && (
+                  <div className="mt-1 bg-white dark:bg-dark-surface border border-light-border dark:border-dark-muted rounded-aqar shadow-lg max-h-32 overflow-y-auto">
+                    {citySuggestions.map((city, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setLocalFilters(prev => ({ ...prev, city }));
+                          setCityQuery('');
+                          setCitySuggestions([]);
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-light-primary-200 dark:hover:bg-dark-muted transition-colors text-light-text dark:text-dark-text"
+                      >
+                        {city}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">
                   {t('town', state.language)}
                 </label>
-                <select
+                <input
+                  type="text"
                   value={localFilters.town || ''}
-                  onChange={(e) => setLocalFilters(prev => ({ ...prev, town: e.target.value || undefined }))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setLocalFilters(prev => ({ ...prev, town: value || undefined }));
+                    setTownQuery(value);
+                  }}
+                  placeholder="Type to search towns..."
                   className="w-full px-4 py-3 bg-white dark:bg-dark-surface border border-light-border dark:border-dark-muted rounded-aqar text-light-text dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-light-primary"
-                >
-                  <option value="">All Towns</option>
-                  {getUniqueTowns(localFilters.city).map(town => (
-                    <option key={town} value={town}>{town}</option>
-                  ))}
-                </select>
+                />
+                {townSuggestions.length > 0 && (
+                  <div className="mt-1 bg-white dark:bg-dark-surface border border-light-border dark:border-dark-muted rounded-aqar shadow-lg max-h-32 overflow-y-auto">
+                    {townSuggestions.map((town, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setLocalFilters(prev => ({ ...prev, town }));
+                          setTownQuery('');
+                          setTownSuggestions([]);
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-light-primary-200 dark:hover:bg-dark-muted transition-colors text-light-text dark:text-dark-text"
+                      >
+                        {town}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
