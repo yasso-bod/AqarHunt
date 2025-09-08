@@ -1,295 +1,249 @@
+import { USE_MOCK_API } from '../config/api';
+import { mockListings } from '../data/mockListings';
+import { Listing } from '../types';
 import { api } from '../utils/api';
-import { Listing, SearchFilters } from '../types';
 
-// ---------- helpers ----------
-function titleCase(s?: string) {
-  if (!s) return s;
-  return s.toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase());
+export type SearchFilters = {
+  city?: string;
+  town?: string;
+  district_compound?: string;
+  property_type?: string;
+  price_min?: number;
+  price_max?: number;
+  size_min?: number;
+  size_max?: number;
+  bedrooms_min?: number;
+  bathrooms_min?: number;
+  furnished?: 'Yes' | 'No' | string;
+  offering_type?: 'Sale' | 'Rent' | string;
+  limit?: number;
+  page?: number;
+};
+
+function normalizeYN(v: any) {
+  const s = String(v ?? '').toLowerCase();
+  if (!s) return '';
+  if (['yes', 'y', 'true', 'furnished'].includes(s)) return 'yes';
+  if (['no', 'n', 'false', 'unfurnished'].includes(s)) return 'no';
+  return s;
 }
 
-function dedupeListings(list: Listing[]) {
-  const seen = new Set<string>();
-  const out: Listing[] = [];
-  for (const x of list) {
-    const id = String(x.id);
-    if (!seen.has(id)) {
-      seen.add(id);
-      out.push(x);
+function applyFilters(list: Listing[], f: SearchFilters = {}) {
+  return list.filter((x) => {
+    if (f.city && String(x.city) !== String(f.city)) return false;
+    if (f.town && String(x.town) !== String(f.town)) return false;
+    if (f.district_compound && String(x.district_compound || '') !== String(f.district_compound)) return false;
+    if (f.property_type && String(x.property_type) !== String(f.property_type)) return false;
+
+    const price = Number(x.price) || 0;
+    if (f.price_min != null && price < Number(f.price_min)) return false;
+    if (f.price_max != null && price > Number(f.price_max)) return false;
+
+    const size = Number(x.size) || 0;
+    if (f.size_min != null && size < Number(f.size_min)) return false;
+    if (f.size_max != null && size > Number(f.size_max)) return false;
+
+    const beds = Number(x.bedrooms) || 0;
+    const baths = Number(x.bathrooms) || 0;
+    if (f.bedrooms_min != null && beds < Number(f.bedrooms_min)) return false;
+    if (f.bathrooms_min != null && baths < Number(f.bathrooms_min)) return false;
+
+    if (f.furnished) {
+      const have = normalizeYN(x.furnished ?? (x as any).furnishing ?? '');
+      if (have && have !== normalizeYN(f.furnished)) return false;
     }
-  }
-  return out;
-}
-
-export function rankByCloseness(seed: Partial<Listing>, arr: Listing[]) {
-  const sBeds = Number(seed.bedrooms) || 0;
-  const sBaths = Number(seed.bathrooms) || 0;
-  const sSize = Number(seed.size) || 0;
-  const sType = String(seed.property_type || '').toLowerCase();
-  const sCity = (seed.city || '').toLowerCase();
-  const sTown = (seed.town || '').toLowerCase();
-
-  const score = (x: Listing) => {
-    const xCity = (x.city || '').toLowerCase();
-    const xTown = (x.town || '').toLowerCase();
-    const xType = String(x.property_type || '').toLowerCase();
-    const loc = (xCity === sCity ? 8 : 0) + (xTown === sTown ? 8 : 0);
-    const typ = xType === sType ? 6 : 0;
-    const beds = -Math.abs((Number(x.bedrooms) || 0) - sBeds) * 2;
-    const baths = -Math.abs((Number(x.bathrooms) || 0) - sBaths) * 1.5;
-    const size =
-      sSize > 0
-        ? -Math.min(10, Math.abs((Number(x.size) || 0) - sSize) / (sSize * 0.1))
-        : 0;
-    return loc + typ + beds + baths + size;
-  };
-
-  return [...arr].sort((a, b) => score(b) - score(a));
-}
-
-function normalizeFilters(filters: SearchFilters & { limit?: number; page?: number }) {
-  const out: any = {};
-  const add = (k: string, v: any) => {
-    if (v === undefined || v === null) return;
-    if (typeof v === 'string' && v.trim() === '') return;
-    out[k] = v;
-  };
-
-  // location
-  add('city', filters.city?.trim());
-  add('town', filters.town?.trim());
-  add('district_compound', filters.district_compound?.trim());
-
-  // numerics
-  const toNumber = (x: any) =>
-    x === '' || x === undefined || x === null ? undefined : Number(x);
-  const toInt = (x: any) =>
-    x === '' || x === undefined || x === null ? undefined : parseInt(String(x), 10);
-
-  add('price_min', toNumber(filters.price_min));
-  add('price_max', toNumber(filters.price_max));
-  add('size_min', toNumber(filters.size_min));
-  add('size_max', toNumber(filters.size_max));
-  add('bedrooms_min', toInt(filters.bedrooms_min));
-  add('bathrooms_min', toInt(filters.bathrooms_min));
-
-  // property type
-  if (filters.property_type) {
-    const normalizedType = filters.property_type.toLowerCase();
-    const map: Record<string, string> = {
-      apartment: 'Apartment',
-      villa: 'Villa',
-      studio: 'Studio',
-      townhouse: 'Townhouse',
-      penthouse: 'Penthouse',
-      duplex: 'Duplex',
-      chalet: 'Chalet',
-      twin_house: 'Twin House',
-      standalone_villa: 'Standalone Villa',
-    };
-    add('property_type', map[normalizedType] || titleCase(filters.property_type));
-  }
-
-  // furnished
-  if (filters.furnished !== undefined) {
-    if (typeof filters.furnished === 'boolean') {
-      add('furnished', filters.furnished ? 'Yes' : 'No');
-    } else {
-      add('furnished', filters.furnished);
+    if (f.offering_type && String(x.offering_type || '').toLowerCase() !== String(f.offering_type).toLowerCase()) {
+      return false;
     }
-  }
-
-  // offering
-  if (filters.offering_type) {
-    add('offering_type', titleCase(filters.offering_type));
-  }
-
-  add('limit', filters.limit || 30);
-  add('page', filters.page || 1);
-  return out;
+    return true;
+  });
 }
 
-// ---------- API types ----------
-export interface SearchResponse {
-  items: Listing[];
-  page: number;
-  limit: number;
-  count: number;
-}
-export interface PricePredictionResponse {
-  predicted_price_egp: number;
-  model_version: string;
-}
-export interface CreateListingResponse {
-  id: string;
-  estimated_price_egp: number;
-  final_price_saved: number;
-  used_asking_price: boolean;
-}
-
-// ---------- Search ----------
+// ---------- search ----------
 export async function searchListings(
-  filters: SearchFilters & { limit?: number; page?: number } = {},
+  filters: SearchFilters = {},
   page?: number,
   limit?: number
-): Promise<SearchResponse> {
-  const searchParams = {
-    ...filters,
-    page: page || filters.page || 1,
-    limit: limit || filters.limit || 30,
-  };
-  const normalizedPayload = normalizeFilters(searchParams);
-  return api.post<SearchResponse>('/search', normalizedPayload);
+) {
+  const p = Number(page || filters.page || 1);
+  const l = Number(limit || filters.limit || 20);
+
+  if (USE_MOCK_API) {
+    const filtered = applyFilters(mockListings as any, filters);
+    const start = (p - 1) * l;
+    const items = filtered.slice(start, start + l);
+    return { items, total: filtered.length, page: p, limit: l };
+  }
+
+  const res = await api.post<any>('/search', { ...filters, page: p, limit: l });
+  return res;
 }
 
-export async function getListing(id: string): Promise<Listing> {
-  return api.get<Listing>(`/listings/${encodeURIComponent(id)}`);
-}
-
-// ---------- Suggestions (used by SearchBar) ----------
-export async function getSuggestions(
-  field: 'city' | 'town' | 'district_compound',
-  query: string,
-  limit = 10
-): Promise<string[]> {
-  const params = { field, q: query, limit: String(limit) };
-  const res = await api.get<{ items: string[] }>('/suggest', params);
-  return res.items || [];
-}
-
+// ---------- suggestions ----------
 export async function getSingleFieldSuggestions(
   field: 'city' | 'town' | 'district_compound',
   query: string,
   limit = 10
 ): Promise<string[]> {
-  if (!query.trim()) return [];
+  if (USE_MOCK_API) {
+    const values = Array.from(
+      new Set(
+        (mockListings as any)
+          .map((m: any) => String(m[field] || '').trim())
+          .filter(Boolean)
+      )
+    );
+    const qq = query.toLowerCase();
+    const starts = values.filter((v) => v.toLowerCase().startsWith(qq));
+    const contains = values.filter(
+      (v) => !v.toLowerCase().startsWith(qq) && v.toLowerCase().includes(qq)
+    );
+    return [...starts, ...contains].slice(0, limit);
+  }
+
   const params = { field, q: query, limit: String(limit) };
   const res = await api.get<{ items: string[] }>('/suggest_fuzzy', params);
-  const suggestions = res.items || [];
-  return suggestions.sort((a, b) => {
-    const q = query.toLowerCase();
-    const aL = a.toLowerCase();
-    const bL = b.toLowerCase();
-    const aExact = aL === q;
-    const bExact = bL === q;
-    if (aExact !== bExact) return aExact ? -1 : 1;
-    const aStarts = aL.startsWith(q);
-    const bStarts = bL.startsWith(q);
-    if (aStarts !== bStarts) return aStarts ? -1 : 1;
-    return 0;
-  });
+  return res.items || [];
 }
 
 export async function getOmniSuggestions(
   query: string,
   limit = 10
 ): Promise<{ field: 'city' | 'town' | 'district_compound'; value: string }[]> {
-  if (!query.trim()) return [];
-  const [c, t, d] = await Promise.allSettled([
-    getSingleFieldSuggestions('city', query, 5),
-    getSingleFieldSuggestions('town', query, 5),
-    getSingleFieldSuggestions('district_compound', query, 5),
+  const [c, t, d] = await Promise.all([
+    getSingleFieldSuggestions('city', query, limit),
+    getSingleFieldSuggestions('town', query, limit),
+    getSingleFieldSuggestions('district_compound', query, limit),
   ]);
-
   const out: { field: 'city' | 'town' | 'district_compound'; value: string }[] = [];
-  if (c.status === 'fulfilled') c.value.forEach((v) => out.push({ field: 'city', value: v }));
-  if (t.status === 'fulfilled') t.value.forEach((v) => out.push({ field: 'town', value: v }));
-  if (d.status === 'fulfilled') d.value.forEach((v) => out.push({ field: 'district_compound', value: v }));
-
+  c.forEach((v) => out.push({ field: 'city', value: v }));
+  t.forEach((v) => out.push({ field: 'town', value: v }));
+  d.forEach((v) => out.push({ field: 'district_compound', value: v }));
   const seen = new Set<string>();
-  const deduped = out.filter((x) => {
-    const k = `${x.field}:${x.value}`;
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
-
-  return deduped.slice(0, limit);
+  return out.filter((x) => (seen.has(x.field + ':' + x.value) ? false : (seen.add(x.field + ':' + x.value), true)));
 }
 
-// ---------- Price prediction & create listing (needed by EstimateModal / CreateListing) ----------
+// ---------- single listing ----------
+export async function getListing(id: string) {
+  if (USE_MOCK_API) {
+    const found = (mockListings as any).find((x: any) => String(x.id) === String(id));
+    if (!found) throw new Error('Listing not found');
+    return found as Listing;
+  }
+  return api.getListing(id);
+}
+
+// ---------- price prediction ----------
 export async function predictPrice(data: {
   city: string;
   town: string;
   district_compound: string;
   property_type: string;
-  furnishing: string;          // NOTE: "furnishing" for /predict_price
+  furnishing: string;
   completion_status: string;
-  offering_type: string;       // "Sale" | "Rent"
+  offering_type: string;
   bedrooms: number;
   bathrooms: number;
   size: number;
   lat: number;
   lon: number;
   down_payment_price?: number;
-}): Promise<PricePredictionResponse> {
-  // Validate offering_type early (common source of server 4xx)
-  const ot = (data.offering_type || '').toLowerCase();
-  if (ot !== 'sale' && ot !== 'rent') {
-    throw new Error('Offering type must be either "Sale" or "Rent"');
+}) {
+  if (USE_MOCK_API) {
+    const size = Number(data.size) || 100;
+    const br = Number(data.bedrooms) || 2;
+    const base = 20000;
+    const price = Math.round(size * base * (1 + br * 0.05));
+    return { price };
   }
   return api.predict(data);
 }
 
-export async function createListing(data: {
-  property_type: string;
-  city: string;
-  town: string;
-  district_compound: string;
-  completion_status: string;
-  offering_type: string;
-  furnished: string;           // NOTE: "furnished" for /listings/create
-  lat: number;
-  lon: number;
-  bedrooms: number;
-  bathrooms: number;
-  size: number;
-  down_payment_price?: number;
-  price?: number;
-}): Promise<CreateListingResponse> {
-  return api.createListing(data);
+// ---------- create listing ----------
+export async function createListing(payload: Partial<Listing>) {
+  if (USE_MOCK_API) {
+    const id = String(
+      ((mockListings as any).reduce((m: number, x: any) => Math.max(m, Number(x.id) || 0), 0) || 1000) + 1
+    );
+    const listing = { ...payload, id } as Listing;
+    (mockListings as any).push(listing);
+    return listing;
+  }
+  return api.createListing(payload);
 }
 
-// ---------- Recommendations ----------
-export async function getRecommendationsByPropertyLive(
-  propertyId: string,
-  topK = 10
-): Promise<Listing[]> {
-  const response = await api.recLive({ property_id: propertyId, top_k: topK });
-  const ids: string[] = (response?.items || []).map((x: any) => String(x.property_id));
-  if (!ids.length) return [];
+// ---------- recommendations helpers ----------
+async function inflateIds(ids: string[]) {
   const details = await Promise.all(ids.map((id) => getListing(id).catch(() => null)));
   return details.filter(Boolean) as Listing[];
 }
 
+// ---------- recs: by property (live) ----------
+export async function getRecommendationsByPropertyLive(propertyId: string, topK = 10) {
+  const res = await api.recLive({ property_id: propertyId, top_k: topK });
+  const ids = (res?.items || []).map((x: any) => String(x.property_id));
+  if (!ids.length) return [];
+  return inflateIds(ids);
+}
+
+// ---------- recs: within filters (live) ----------
 export async function getRecommendationsWithinFiltersLive(
   propertyId: string,
   filters: SearchFilters,
   topK = 10
-): Promise<Listing[]> {
-  const response = await api.recWithinLive({ property_id: propertyId, top_k: topK, filters });
-  const ids: string[] = (response?.items || []).map((x: any) => String(x.property_id));
+) {
+  const res = await api.recWithinLive({ property_id: propertyId, top_k: topK, filters });
+  const ids = (res?.items || []).map((x: any) => String(x.property_id));
   if (!ids.length) return [];
-  const details = await Promise.all(ids.map((id) => getListing(id).catch(() => null)));
-  return details.filter(Boolean) as Listing[];
+  return inflateIds(ids);
 }
 
-// ---------- Rails helpers ----------
-export async function getSimilarFromSeeds(seeds: string[], perSeed = 6, maxTotal = 12) {
-  const out: Listing[] = [];
-  for (const seed of seeds.slice(0, 4)) {
-    const sims = await getRecommendationsByPropertyLive(seed, perSeed);
-    out.push(...sims);
-    if (out.length >= maxTotal) break;
-  }
-  return dedupeListings(out).slice(0, maxTotal);
+// ---------- recs: by attributes ----------
+export async function getRecommendationsByAttributes(
+  attributes: {
+    property_type?: string;
+    city?: string;
+    town?: string;
+    district_compound?: string;
+    bedrooms?: number;
+    bathrooms?: number;
+    size?: number;
+    offering_type?: string;
+    completion_status?: string;
+    furnished?: string;
+  },
+  topK = 10
+) {
+  const res = await api.recByAttributes({ ...attributes, top_k: topK });
+  const ids = (res?.items || []).map((x: any) => String(x.property_id));
+  if (!ids.length) return [];
+  return inflateIds(ids);
 }
 
-export async function getTrendingNear(city?: string, town?: string, limit = 12) {
-  const res = await searchListings({
-    city,
-    town,
-    limit,
-    page: 1,
-  });
-  return res.items || [];
+// ---------- recs: by attributes within filters ----------
+export async function getRecommendationsByAttributesWithinFilters(
+  attributes: {
+    property_type?: string;
+    city?: string;
+    town?: string;
+    district_compound?: string;
+    bedrooms?: number;
+    bathrooms?: number;
+    size?: number;
+    offering_type?: string;
+    completion_status?: string;
+    furnished?: string;
+  },
+  filters: SearchFilters,
+  topK = 10
+) {
+  const res = await api.recWithinFiltersByAttributes({ ...attributes, filters, top_k: topK });
+  const ids = (res?.items || []).map((x: any) => String(x.property_id));
+  if (!ids.length) return [];
+  return inflateIds(ids);
+}
+
+// ---------- health ----------
+export async function healthCheck() {
+  return api.health();
 }
