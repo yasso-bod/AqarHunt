@@ -26,17 +26,17 @@ export function ProfileTab() {
           <User className="w-10 h-10 text-white" />
         </div>
         <h2 className="text-h1 font-bold text-light-text dark:text-dark-text mb-2">
-          {t('welcomeToAqarHunt', state.language)}
+          Welcome to AqarHunt
         </h2>
         <p className="text-light-text/70 dark:text-dark-muted">
-          {t('realEstateCompanion', state.language)}
+          Your real estate companion for Egypt
         </p>
       </Card>
 
       {/* Settings */}
       <div className="space-y-4">
         <h3 className="text-h2 font-semibold text-light-text dark:text-dark-text">
-          {t('settings', state.language)}
+          Settings
         </h3>
 
         {/* Language Setting */}
@@ -107,7 +107,7 @@ export function ProfileTab() {
       {/* Information Links */}
       <div className="space-y-4">
         <h3 className="text-h2 font-semibold text-light-text dark:text-dark-text">
-          {t('information', state.language)}
+          Information
         </h3>
 
         <div className="space-y-2">

@@ -38,33 +38,28 @@ export function Header({ onProfileClick, onLogoClick }: HeaderProps) {
         <div className="flex items-center space-x-3 rtl:space-x-reverse">
           {/* Theme Toggle */}
           <Button
-            variant={state.theme === 'dark' ? "primary" : "outline"}
+            variant="outline"
             size="sm"
             onClick={toggleTheme}
-            className="px-3 hover:scale-105 transition-transform"
+            className="px-3"
           >
             {state.theme === 'light' ? (
-              <>
-                <Moon className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-                {state.language === 'ar' ? 'داكن' : 'Dark'}
-              </>
+              <Moon className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
             ) : (
-              <>
-                <Sun className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-                {state.language === 'ar' ? 'فاتح' : 'Light'}
-              </>
+              <Sun className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
             )}
+            {state.theme === 'light' ? 'Dark' : 'Light'}
           </Button>
 
           {/* Language Toggle */}
           <Button
-            variant="primary"
+            variant="outline"
             size="sm"
             onClick={toggleLanguage}
-            className="px-3 hover:scale-105 transition-transform"
+            className="px-3"
           >
             <Globe className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-            {state.language === 'en' ? 'AR' : 'EN'}
+            {state.language.toUpperCase()}
           </Button>
 
           {/* Avatar */}

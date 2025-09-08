@@ -6,13 +6,10 @@ import { ListingCard } from '../listing/ListingCard';
 import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { LoadingSkeleton } from '../ui/LoadingSkeleton';
-import { useToast } from '../ui/Toast';
 import { useApp } from '../../contexts/AppContext';
 import { t } from '../../utils/translations';
-import { searchListings } from '../../services/listingService';
-import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
-import { useDebounce } from '../../hooks/useDebounce';
-import { Listing } from '../../types';
+import { mockListings } from '../../data/mockListings';
+import { filterListings, sortListings, searchListings } from '../../utils/searchUtils';
 
 interface SearchTabProps {
   onViewListing: (listingId: string) => void;
@@ -21,96 +18,34 @@ interface SearchTabProps {
 type ViewMode = 'extra-large' | 'large' | 'medium' | 'small' | 'list';
 export function SearchTab({ onViewListing }: SearchTabProps) {
   const { state, setSortBy } = useApp();
-  const { showToast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('medium');
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
 
-  // Debounce search query
-  const debouncedSearchQuery = useDebounce(searchQuery, 500);
-
-  // Load listings when filters or search query changes
-  React.useEffect(() => {
-    // Load with current filters and log for debugging
-    console.log('SearchTab: Loading listings with filters:', state.searchFilters);
-    loadListings(true);
-  }, [state.searchFilters, debouncedSearchQuery, state.sortBy]);
-
-  const loadListings = async (reset = false) => {
-    try {
-      if (reset) {
-        setIsLoading(true);
-        setPage(1);
-      }
-
-      const currentPage = reset ? 1 : page;
-      const response = await searchListings(state.searchFilters, currentPage, 30);
-      
-      if (reset) {
-        setListings(response.items);
-      } else {
-        setListings(prev => [...prev, ...response.items]);
-      }
-      
-      setTotalCount(response.count);
-      setHasMore(response.items.length >= 30);
-      
-      if (!reset) {
-        setPage(prev => prev + 1);
-      }
-    } catch (error) {
-      console.error('Failed to load listings:', error);
-      showToast({
-        type: 'error',
-        title: 'Failed to load listings from API',
-        message: error instanceof Error ? error.message : 'Please try again later',
-      });
-      setListings([]);
-      setTotalCount(0);
-    } finally {
-      setIsLoading(false);
+  const filteredListings = useMemo(() => {
+    let results = mockListings;
+    
+    // Apply search query
+    if (searchQuery.trim()) {
+      results = searchListings(results, searchQuery);
     }
-  };
-
-  // Infinite scroll
-  const [sentinelRef, isFetching, setIsFetchingMore] = useInfiniteScroll(
-    async () => {
-      if (hasMore && !isLoading) {
-        setIsFetchingMore(true);
-        await loadListings(false);
-        setIsFetchingMore(false);
-      }
-    }
-  );
+    
+    // Apply filters
+    results = filterListings(results, state.searchFilters);
+    
+    // Apply sorting
+    results = sortListings(results, state.sortBy);
+    
+    return results;
+  }, [searchQuery, state.searchFilters, state.sortBy]);
 
   const handleSearch = (query: string) => {
-    // Search is now handled via the SearchBar component setting filters directly
+    setIsLoading(true);
+    setSearchQuery(query);
+    // Simulate API delay
+    setTimeout(() => setIsLoading(false), 300);
   };
-
-  // Client-side sorting for now
-  const sortedListings = useMemo(() => {
-    const sorted = [...listings];
-    
-    switch (state.sortBy) {
-      case 'newest':
-        return sorted.sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
-      case 'price_asc':
-        return sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
-      case 'price_desc':
-        return sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
-      case 'size_asc':
-        return sorted.sort((a, b) => (a.size || 0) - (b.size || 0));
-      case 'size_desc':
-        return sorted.sort((a, b) => (b.size || 0) - (a.size || 0));
-      default:
-        return sorted;
-    }
-  }, [listings, state.sortBy]);
 
   const viewOptions = [
     { mode: 'extra-large' as ViewMode, icon: Grid3X3, label: 'Extra Large', cols: 'grid-cols-1' },
@@ -194,7 +129,7 @@ export function SearchTab({ onViewListing }: SearchTabProps) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-h2 font-semibold text-light-text dark:text-dark-text">
-            {totalCount} {t('results', state.language)}
+            {filteredListings.length} {t('results', state.language)}
           </h3>
         </div>
 
@@ -211,7 +146,7 @@ export function SearchTab({ onViewListing }: SearchTabProps) {
               </div>
             ))}
           </div>
-        ) : sortedListings.length === 0 ? (
+        ) : filteredListings.length === 0 ? (
           <EmptyState
             title={t('noResults', state.language)}
             description="Try adjusting your search criteria or filters"
@@ -224,7 +159,7 @@ export function SearchTab({ onViewListing }: SearchTabProps) {
           />
         ) : (
           <div className={`grid gap-3 ${viewOptions.find(v => v.mode === viewMode)?.cols}`}>
-            {sortedListings.map((listing) => (
+            {filteredListings.map((listing) => (
               <ListingCard
                 key={listing.id}
                 listing={listing}
@@ -232,21 +167,8 @@ export function SearchTab({ onViewListing }: SearchTabProps) {
                 variant={getCardVariant(viewMode) as any}
               />
             ))}
-            
-            {/* Loading more indicator */}
-            {isFetching && (
-              <div className="col-span-full flex justify-center py-4">
-                <div className="flex items-center space-x-2 rtl:space-x-reverse text-light-text/70 dark:text-dark-muted">
-                  <div className="w-4 h-4 border-2 border-light-primary border-t-transparent rounded-full animate-spin" />
-                  <span>Loading more...</span>
-                </div>
-              </div>
-            )}
           </div>
         )}
-        
-        {/* Infinite scroll sentinel */}
-        <div ref={sentinelRef} className="h-4" />
       </div>
 
       {/* Filter Drawer */}

@@ -11,9 +11,9 @@ export interface Listing {
   size: number; // in m²
   lat: number;
   lon: number;
-  created_at?: string;
-  images?: string[];
-  furnished?: boolean;
+  created_at: string;
+  images: string[];
+  furnished: boolean;
   offering_type: 'sale' | 'rent';
   completion_status: 'ready' | 'under_construction' | 'off_plan';
   down_payment?: number;
@@ -26,8 +26,6 @@ export interface SearchFilters {
   district_compound?: string;
   price_min?: number;
   price_max?: number;
-  size_min?: number;
-  size_max?: number;
   bedrooms_min?: number;
   bathrooms_min?: number;
   property_type?: string;

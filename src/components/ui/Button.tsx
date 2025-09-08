@@ -19,7 +19,7 @@ export function Button({
   const variants = {
     primary: 'bg-light-primary hover:bg-light-primary/90 text-white focus:ring-light-primary dark:bg-dark-primary dark:hover:bg-dark-primary/90 dark:text-white',
     secondary: 'bg-light-info hover:bg-light-info/90 text-white focus:ring-light-info dark:bg-dark-accent dark:hover:bg-dark-accent/90 dark:text-white',
-    outline: 'border-2 border-light-primary text-light-primary hover:bg-light-primary hover:text-white focus:ring-light-primary dark:border-dark-primary dark:text-dark-text dark:hover:bg-dark-primary dark:hover:text-white',
+    outline: 'border-2 border-light-primary text-light-primary hover:bg-light-primary hover:text-white focus:ring-light-primary dark:border-dark-primary dark:text-white dark:hover:bg-dark-primary dark:hover:text-white',
     gradient: 'bg-gradient-primary hover:bg-gradient-primary/90 text-white focus:ring-light-primary dark:bg-gradient-to-r dark:from-dark-primary dark:to-dark-accent hover:scale-105 transform text-white'
   };
   

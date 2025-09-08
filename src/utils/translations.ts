@@ -48,10 +48,6 @@ export const translations = {
     studio: 'Studio',
     townhouse: 'Townhouse',
     penthouse: 'Penthouse',
-    duplex: 'Duplex',
-    chalet: 'Chalet',
-    twin_house: 'Twin House',
-    standalone_villa: 'Standalone Villa',
     
     // Listing Details
     verified: 'Verified',
@@ -88,12 +84,6 @@ export const translations = {
     privacy: 'Privacy Policy',
     terms: 'Terms of Service',
     
-    // Profile page content
-    welcomeToAqarHunt: 'Welcome to AqarHunt',
-    realEstateCompanion: 'Your real estate companion for Egypt',
-    settings: 'Settings',
-    information: 'Information',
-    
     // Common
     egp: 'EGP',
     br: 'BR',
@@ -124,68 +114,6 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     
     // Units
     squareMeters: 'm²',
-    
-    // Offering types
-    saleOffering: 'Sale',
-    rentOffering: 'Rent',
-    
-    // Cities in English
-    cairoCity: 'Cairo',
-    gizaCity: 'Giza',
-    alexandriaCity: 'Alexandria',
-    
-    // Areas/Towns in English
-    newCairo: 'New Cairo',
-    heliopolis: 'Heliopolis',
-    maadi: 'Maadi',
-    zamalek: 'Zamalek',
-    dokki: 'Dokki',
-    mohandessin: 'Mohandessin',
-    nasr_city: 'Nasr City',
-    downtown: 'Downtown',
-    agouza: 'Agouza',
-    sixth_october: '6th of October',
-    sheikh_zayed: 'Sheikh Zayed',
-    
-    // Saved Properties Actions
-    remove: 'Remove',
-    selectAll: 'Select All',
-    
-    // Map Tab
-    propertiesFound: 'properties found',
-    
-    // Recommendations Tab
-    describeYourProperty: 'Describe your property',
-    useExistingListing: 'Use existing listing',
-    similarWithinFilters: 'Similar within Filters',
-    similarLive: 'Similar (Live)',
-    fillPropertyDetailsForRecommendations: 'Fill in the property details above to get AI-powered recommendations',
-    
-    // Map popup
-    viewFullDetails: 'View Full Details',
-    
-    // Property Details Elements
-    message: 'Message',
-    call: 'Call',
-    size: 'Size',
-    bathrooms: 'Bathrooms',
-    bedrooms: 'Bedrooms',
-    floor: 'Floor',
-    balcony: 'Balcony',
-    garden: 'Garden',
-    parking: 'Parking',
-    elevator: 'Elevator',
-    security: 'Security',
-    gym: 'Gym',
-    pool: 'Pool',
-    view: 'View',
-    features: 'Features',
-    amenities: 'Amenities',
-    description: 'Description',
-    location: 'Location',
-    contact: 'Contact',
-    seller: 'Seller',
-    agent: 'Agent',
   },
   ar: {
     // Navigation
@@ -234,10 +162,6 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     studio: 'استوديو',
     townhouse: 'تاون هاوس',
     penthouse: 'بنتهاوس',
-    duplex: 'دوبليكس',
-    chalet: 'شاليه',
-    twin_house: 'توين هاوس',
-    standalone_villa: 'فيلا منفصلة',
     
     // Listing Details
     verified: 'موثق',
@@ -264,76 +188,6 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     submit: 'إرسال الإعلان',
     noPhoto: 'لا توجد صورة',
     
-    // Additional Property Terms
-    floor: 'الطابق',
-    balcony: 'شرفة',
-    garden: 'حديقة',
-    parking: 'موقف سيارات',
-    elevator: 'مصعد',
-    security: 'أمن',
-    gym: 'صالة رياضية',
-    pool: 'حمام سباحة',
-    view: 'إطلالة',
-    seaView: 'إطلالة بحرية',
-    cityView: 'إطلالة على المدينة',
-    gardenView: 'إطلالة على الحديقة',
-    
-    // Property Features
-    airConditioning: 'تكييف',
-    centralHeating: 'تدفئة مركزية',
-    builtInKitchen: 'مطبخ مجهز',
-    builtInWardrobe: 'دولاب مدمج',
-    ceramic: 'سيراميك',
-    parquet: 'باركيه',
-    marble: 'رخام',
-    
-    // Location Terms
-    nearMetro: 'قريب من المترو',
-    nearSchools: 'قريب من المدارس',
-    nearHospitals: 'قريب من المستشفيات',
-    nearMalls: 'قريب من المولات',
-    nearMosque: 'قريب من المسجد',
-    
-    // Financial Terms
-    totalPrice: 'السعر الإجمالي',
-    pricePerMeter: 'سعر المتر',
-    monthlyRent: 'الإيجار الشهري',
-    yearlyRent: 'الإيجار السنوي',
-    deposit: 'التأمين',
-    commission: 'العمولة',
-    maintenance: 'الصيانة',
-    utilities: 'المرافق',
-    
-    // Status Terms
-    available: 'متاح',
-    sold: 'تم البيع',
-    rented: 'تم التأجير',
-    reserved: 'محجوز',
-    underOffer: 'تحت العرض',
-    
-    // Contact Terms
-    callNow: 'اتصل الآن',
-    whatsapp: 'واتساب',
-    email: 'بريد إلكتروني',
-    viewPhone: 'عرض الهاتف',
-    contactAgent: 'تواصل مع الوسيط',
-    
-    // Time Terms
-    today: 'اليوم',
-    yesterday: 'أمس',
-    daysAgo: 'منذ {count} أيام',
-    weeksAgo: 'منذ {count} أسابيع',
-    monthsAgo: 'منذ {count} أشهر',
-    
-    // Action Terms
-    viewDetails: 'عرض التفاصيل',
-    viewPhotos: 'عرض الصور',
-    viewMap: 'عرض الخريطة',
-    compare: 'مقارنة',
-    report: 'إبلاغ',
-    favorite: 'مفضلة',
-    unfavorite: 'إزالة من المفضلة',
-    
     // Profile
     language: 'اللغة',
     theme: 'المظهر',
@@ -344,12 +198,6 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     privacy: 'سياسة الخصوصية',
     terms: 'شروط الخدمة',
     
-    // Profile page content
-    welcomeToAqarHunt: 'مرحباً بك في عقار هنت',
-    realEstateCompanion: 'رفيقك العقاري في مصر',
-    settings: 'الإعدادات',
-    information: 'المعلومات',
-    
     // Common
     egp: 'ج.م',
     br: 'غرفة',
@@ -359,11 +207,11 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     error: 'حدث خطأ ما',
     
     // About content (Arabic translations)
-    aboutContent: `عقار هنت هو مساعد عقاري لمصر يساعد المشترين في اكتشاف العقارات ذات الصلة ويساعد البائعين في تقدير أسعار السوق العادلة. يجمع التطبيق بين البحث السريع والمطابقة الضبابية مع ميزتين أساسيتين للذكاء الاصطناعي: <strong>نظام التوصيات</strong> الذي يعرض المنازل "المشابهة لهذا" و<strong>نموذج التنبؤ بالأسعار</strong> الذي يقدر القيمة من الموقع والنوع والحجم والغرف والسمات الأخرى. تم تصميمه للمشترين والبائعين، مع التخطيط لأدوات الإدارة التالية.
+    aboutContent: `عقار هنت هو مساعد عقاري لمصر يساعد المشترين في اكتشاف العقارات ذات الصلة ويساعد البائعين في تقدير أسعار السوق العادلة. يجمع التطبيق بين البحث السريع والمطابقة الضبابية مع ميزتين أساسيتين للذكاء الاصطناعي: **نظام التوصيات** الذي يعرض المنازل "المشابهة لهذا" و**نموذج التنبؤ بالأسعار** الذي يقدر القيمة من الموقع والنوع والحجم والغرف والسمات الأخرى. تم تصميمه للمشترين والبائعين، مع التخطيط لأدوات الإدارة التالية.
 
 تحت الغطاء، يستخدم عقار هنت موصي KNN قائم على المحتوى ونموذج انحدار مدرب لتقديم اقتراحات مرتبة وتقديرات أسعار فورية - مما يبسط تجربة البحث ويدعم قرارات أفضل مدفوعة بالبيانات للسوق المصري.`,
     
-    privacyContent: `\نحن نستخدم فقط المعلومات اللازمة لتشغيل التوصيات وتقديرات الأسعار. يشمل ذلك <strong>بيانات قوائم العقارات</strong> (مثل المدينة والبلدة/المجمع والإحداثيات ونوع العقار والحجم وغرف النوم/الحمامات والأثاث وحالة الإنجاز ونوع العرض والسعر) و<strong>مدخلات التفضيل الأساسية</strong> المستخدمة لتصفية أو تخصيص النتائج. في هذه المرحلة، عقار هنت هو خلفية ML فقط تم تطويرها في بيئة دفتر/خادم - لا توجد ملفات تعريف حساب أو معرفات شخصية حساسة مطلوبة للحصول على توصيات أو تقديرات.
+    privacyContent: `نحن نستخدم فقط المعلومات اللازمة لتشغيل التوصيات وتقديرات الأسعار. يشمل ذلك **بيانات قوائم العقارات** (مثل المدينة والبلدة/المجمع والإحداثيات ونوع العقار والحجم وغرف النوم/الحمامات والأثاث وحالة الإنجاز ونوع العرض والسعر) و**مدخلات التفضيل الأساسية** المستخدمة لتصفية أو تخصيص النتائج. في هذه المرحلة، عقار هنت هو خلفية ML فقط تم تطويرها في بيئة دفتر/خادم - لا توجد ملفات تعريف حساب أو معرفات شخصية حساسة مطلوبة للحصول على توصيات أو تقديرات.
 
 أي بيانات تقدمها لإنشاء قائمة يتم تخزينها لغرض إنتاج تقدير وتمكين توصيات العقارات المماثلة. نهدف إلى تقليل ما نجمعه، واستخدامه فقط لتشغيل الميزات الأساسية، وتكييف النظام للتوطين وتحسينات الجودة مع نضج المنتج.`,
     
@@ -380,68 +228,6 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     
     // Units
     squareMeters: 'م²',
-    
-    // Offering types
-    saleOffering: 'بيع',
-    rentOffering: 'إيجار',
-    
-    // Cities in Arabic
-    cairoCity: 'القاهرة',
-    gizaCity: 'الجيزة',
-    alexandriaCity: 'الإسكندرية',
-    
-    // Areas/Towns in Arabic
-    newCairo: 'القاهرة الجديدة',
-    heliopolis: 'مصر الجديدة',
-    maadi: 'المعادي',
-    zamalek: 'الزمالك',
-    dokki: 'الدقي',
-    mohandessin: 'المهندسين',
-    nasr_city: 'مدينة نصر',
-    downtown: 'وسط البلد',
-    agouza: 'العجوزة',
-    sixth_october: 'مدينة السادس من أكتوبر',
-    sheikh_zayed: 'الشيخ زايد',
-    
-    // Saved Properties Actions
-    remove: 'حذف',
-    selectAll: 'تحديد الكل',
-    
-    // Map Tab
-    propertiesFound: 'عقار تم العثور عليه',
-    
-    // Recommendations Tab
-    describeYourProperty: 'وصف العقار الخاص بك',
-    useExistingListing: 'استخدام إعلان موجود',
-    similarWithinFilters: 'مشابه ضمن المرشحات',
-    similarLive: 'مشابه (مباشر)',
-    fillPropertyDetailsForRecommendations: 'املأ تفاصيل العقار أعلاه للحصول على توصيات مدعومة بالذكاء الاصطناعي',
-    
-    // Map popup
-    viewFullDetails: 'عرض التفاصيل الكاملة',
-    
-    // Property Details Elements
-    message: 'رسالة',
-    call: 'اتصال',
-    size: 'المساحة',
-    bathrooms: 'دورات المياه',
-    bedrooms: 'غرف النوم',
-    floor: 'الطابق',
-    balcony: 'شرفة',
-    garden: 'حديقة',
-    parking: 'موقف سيارات',
-    elevator: 'مصعد',
-    security: 'أمن',
-    gym: 'صالة رياضية',
-    pool: 'حمام سباحة',
-    view: 'إطلالة',
-    features: 'المميزات',
-    amenities: 'المرافق',
-    description: 'الوصف',
-    location: 'الموقع',
-    contact: 'تواصل',
-    seller: 'البائع',
-    agent: 'الوسيط',
   }
 };
 
