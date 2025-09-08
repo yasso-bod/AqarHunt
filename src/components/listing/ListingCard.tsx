@@ -6,10 +6,60 @@ import { t } from '../../utils/translations';
 import { Listing } from '../../types';
 import { cn } from '../../utils/cn';
 
+// Helper function to translate city names
+const translateCity = (city: string, language: string) => {
+  // Revert to English for all locations until proper Arabic localization is implemented
+  return city;
+};
+
+// Helper function to translate town/area names
+const translateTown = (town: string, language: string) => {
+  // Revert to English for all locations until proper Arabic localization is implemented
+  return town;
+};
+
+// Helper function to translate offering type
+const translateOfferingType = (offeringType: string, language: string) => {
+  if (offeringType === 'sale') {
+    return language === 'ar' ? 'بيع' : 'Sale';
+  } else if (offeringType === 'rent') {
+    return language === 'ar' ? 'إيجار' : 'Rent';
+  }
+  return offeringType;
+};
+
 interface ListingCardProps {
   listing: Listing;
   onClick: () => void;
   variant?: 'extra-large' | 'large' | 'medium' | 'small' | 'compact' | 'list';
+}
+
+// Helper function to normalize property type display
+function normalizePropertyType(propertyType: string): string {
+  if (!propertyType) return 'apartment';
+  
+  // Convert to lowercase for consistent comparison
+  const normalized = propertyType.toLowerCase().trim();
+  
+  // Handle various API response formats
+  const typeMap: { [key: string]: string } = {
+    'apartment': 'apartment',
+    'villa': 'villa',
+    'studio': 'studio',
+    'townhouse': 'townhouse',
+    'penthouse': 'penthouse',
+    'duplex': 'duplex',
+    'chalet': 'chalet',
+    'twin_house': 'townhouse', // Map twin_house to townhouse for display
+    'twin house': 'townhouse',
+    'standalone_villa': 'villa', // Map standalone_villa to villa for display
+    'standalone villa': 'villa',
+    // Handle potential API variations
+    'pent house': 'penthouse',
+    'town house': 'townhouse',
+  };
+  
+  return typeMap[normalized] || normalized;
 }
 
 export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCardProps) {
@@ -25,6 +75,21 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
     if (!price) return 'Price on request';
     return `${price.toLocaleString()} ${t('egp', state.language)}`;
   };
+
+  const formatBedrooms = (bedrooms?: number) => {
+    return bedrooms || 0;
+  };
+
+  const formatBathrooms = (bathrooms?: number) => {
+    return bathrooms || 0;
+  };
+
+  const formatSize = (size?: number) => {
+    return size || 0;
+  };
+  
+  // Get normalized property type for consistent display
+  const normalizedPropertyType = normalizePropertyType(listing.property_type);
 
   const getImageAspect = () => {
     switch (variant) {
@@ -79,7 +144,7 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
     <Card hover onClick={onClick} className={cn('overflow-hidden', getCardLayout())}>
       <div className={cn('relative', getImageContainer())}>
         <div className={getImageAspect()}>
-          {listing.images.length > 0 ? (
+          {listing.images && listing.images.length > 0 ? (
             <img
               src={listing.images[0]}
               alt={`${t(listing.property_type, state.language)} in ${listing.city}`}
@@ -132,12 +197,14 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
         {/* Property Info */}
         <div className={cn('space-y-1', variant === 'small' && 'space-y-0')}>
           <h3 className={cn('font-semibold text-light-text dark:text-dark-text capitalize', textSizes.title)}>
-            {t(listing.property_type, state.language)} • {listing.bedrooms} {t('br', state.language)} • {listing.size} {t('squareMeters', state.language)}
+            {t(normalizedPropertyType, state.language)} • {formatBedrooms(listing.bedrooms)} {t('br', state.language)} • {formatSize(listing.size)} {t('squareMeters', state.language)}
           </h3>
           
           <div className={cn('flex items-center text-light-text/70 dark:text-dark-muted', textSizes.meta)}>
             <MapPin className={cn('mr-1 rtl:mr-0 rtl:ml-1', variant === 'small' ? 'w-3 h-3' : 'w-4 h-4')} />
-            <span>{listing.city}, {listing.town}</span>
+            <span>
+              {translateCity(listing.city || 'Unknown', state.language)}, {translateTown(listing.town || 'Unknown', state.language)}
+            </span>
           </div>
         </div>
 
@@ -147,20 +214,20 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
             <div className={cn('flex items-center', variant === 'list' ? 'space-x-4 rtl:space-x-reverse' : 'space-x-3 rtl:space-x-reverse')}>
               <div className="flex items-center space-x-1 rtl:space-x-reverse">
                 <Bed className="w-4 h-4" />
-                <span>{listing.bedrooms}</span>
+                <span>{formatBedrooms(listing.bedrooms)}</span>
               </div>
               <div className="flex items-center space-x-1 rtl:space-x-reverse">
                 <Bath className="w-4 h-4" />
-                <span>{listing.bathrooms}</span>
+                <span>{formatBathrooms(listing.bathrooms)}</span>
               </div>
               <div className="flex items-center space-x-1 rtl:space-x-reverse">
                 <Ruler className="w-4 h-4" />
-                <span>{listing.size}{t('squareMeters', state.language)}</span>
+                <span>{formatSize(listing.size)}{t('squareMeters', state.language)}</span>
               </div>
             </div>
             
-            <span className="capitalize text-light-primary dark:text-dark-primary font-medium">
-              {listing.offering_type}
+            <span className="text-light-primary dark:text-dark-primary font-medium">
+              {translateOfferingType(listing.offering_type || 'sale', state.language)}
             </span>
           </div>
         )}
@@ -173,9 +240,11 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
                 {t('furnished', state.language)}
               </span>
             )}
-            <span className={cn('px-2 py-1 bg-light-info/20 text-light-info dark:bg-dark-subtle dark:text-dark-accent rounded-full capitalize', textSizes.meta)}>
-              {listing.completion_status.replace('_', ' ')}
-            </span>
+            {listing.completion_status && (
+              <span className={cn('px-2 py-1 bg-light-info/20 text-light-info dark:bg-dark-subtle dark:text-dark-accent rounded-full capitalize', textSizes.meta)}>
+                {listing.completion_status.replace('_', ' ')}
+              </span>
+            )}
           </div>
         )}
 
@@ -183,12 +252,12 @@ export function ListingCard({ listing, onClick, variant = 'medium' }: ListingCar
         {variant === 'small' && (
           <div className="flex items-center justify-between text-xs text-light-text/70 dark:text-dark-muted">
             <div className="flex items-center space-x-2 rtl:space-x-reverse">
-              <span>{listing.bedrooms}</span>
+              <span>{formatBedrooms(listing.bedrooms)}</span>
               <span>•</span>
-              <span>{listing.bathrooms}</span>
+              <span>{formatBathrooms(listing.bathrooms)}</span>
             </div>
             <span className="text-light-primary dark:text-dark-primary font-medium">
-              {listing.offering_type}
+              {translateOfferingType(listing.offering_type || 'sale', state.language)}
             </span>
           </div>
         )}

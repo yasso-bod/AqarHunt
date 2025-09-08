@@ -5,7 +5,9 @@ import { ListingCard } from '../listing/ListingCard';
 import { EmptyState } from '../ui/EmptyState';
 import { useApp } from '../../contexts/AppContext';
 import { t } from '../../utils/translations';
-import { mockListings } from '../../data/mockListings';
+import { getListing } from '../../services/listingService';
+import { useToast } from '../ui/Toast';
+import { Listing } from '../../types';
 
 interface SavedTabProps {
   onViewListing: (listingId: string) => void;
@@ -14,16 +16,66 @@ interface SavedTabProps {
 type ViewMode = 'large' | 'medium' | 'small' | 'list';
 export function SavedTab({ onViewListing }: SavedTabProps) {
   const { state, toggleSavedListing } = useApp();
+  const { showToast } = useToast();
   const [viewMode, setViewMode] = useState<ViewMode>('medium');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [savedListings, setSavedListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const savedListings = mockListings.filter(listing => 
-    state.savedListings.includes(listing.id)
-  );
+  // Load saved listings from API
+  React.useEffect(() => {
+    loadSavedListings();
+  }, [state.savedListings]);
+
+  const loadSavedListings = async () => {
+    if (state.savedListings.length === 0) {
+      setSavedListings([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const results = await Promise.all(
+        state.savedListings.map(async (id) => {
+          try {
+            return await getListing(id);
+          } catch (e: any) {
+            // 404 => drop the stale mock id
+            if (e?.status === 404) return null;
+            // Any other error — log and skip, do not break the whole page
+            console.warn("Saved getListing failed", id, e);
+            return null;
+          }
+        })
+      );
+      setSavedListings(results.filter(Boolean) as Listing[]);
+    } catch (error) {
+      console.error('Failed to load saved listings:', error);
+      showToast({
+        type: 'error',
+        title: 'Failed to load some saved listings',
+        message: error instanceof Error ? error.message : 'Please try again later',
+      });
+      setSavedListings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBulkRemove = () => {
     selectedItems.forEach(id => toggleSavedListing(id));
     setSelectedItems([]);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedItems.length === savedListings.length) {
+      // If all are selected, deselect all
+      setSelectedItems([]);
+    } else {
+      // Select all listings
+      setSelectedItems(savedListings.map(listing => listing.id));
+    }
   };
 
   const viewOptions = [
@@ -40,6 +92,24 @@ export function SavedTab({ onViewListing }: SavedTabProps) {
         : [...prev, listingId]
     );
   };
+
+  if (loading) {
+    return (
+      <div className="px-4 py-6">
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white dark:bg-dark-surface rounded-aqar border border-light-border dark:border-dark-muted p-4 space-y-4">
+              <div className="h-32 bg-light-primary-200 dark:bg-dark-muted rounded animate-pulse" />
+              <div className="space-y-2">
+                <div className="h-4 bg-light-primary-200 dark:bg-dark-muted rounded w-3/4 animate-pulse" />
+                <div className="h-4 bg-light-primary-200 dark:bg-dark-muted rounded w-1/2 animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (savedListings.length === 0) {
     return (
@@ -63,14 +133,38 @@ export function SavedTab({ onViewListing }: SavedTabProps) {
         
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
           {selectedItems.length > 0 && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAll}
+                className="text-light-primary border-light-primary hover:bg-light-primary hover:text-white dark:text-dark-text dark:border-dark-primary dark:hover:bg-dark-primary"
+              >
+                {selectedItems.length === savedListings.length ? 
+                  (state.language === 'ar' ? 'إلغاء تحديد الكل' : 'Deselect All') : 
+                  t('selectAll', state.language)
+                }
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkRemove}
+                className="text-light-highlight border-light-highlight hover:bg-light-highlight hover:text-white"
+              >
+                <Trash2 className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
+                {t('remove', state.language)} ({selectedItems.length})
+              </Button>
+            </>
+          )}
+          
+          {selectedItems.length === 0 && savedListings.length > 0 && (
             <Button
               variant="outline"
               size="sm"
-              onClick={handleBulkRemove}
-              className="text-light-highlight border-light-highlight hover:bg-light-highlight hover:text-white"
+              onClick={handleSelectAll}
+              className="text-light-primary border-light-primary hover:bg-light-primary hover:text-white dark:text-dark-text dark:border-dark-primary dark:hover:bg-dark-primary"
             >
-              <Trash2 className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
-              Remove ({selectedItems.length})
+              {t('selectAll', state.language)}
             </Button>
           )}
           

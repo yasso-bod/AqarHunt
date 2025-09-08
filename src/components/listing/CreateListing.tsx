@@ -6,19 +6,27 @@ import { Card } from '../ui/Card';
 import { EstimateModal } from '../modals/EstimateModal';
 import { useApp } from '../../contexts/AppContext';
 import { t } from '../../utils/translations';
-import { mockListings } from '../../data/mockListings';
+import { createListing, getRecommendationsByPropertyLive } from '../../services/listingService';
+import { useToast } from '../ui/Toast';
 import { Listing } from '../../types';
 
 interface CreateListingProps {
   onBack: () => void;
+  onViewListing?: (listingId: string, listingData?: any) => void;
 }
 
-export function CreateListing({ onBack }: CreateListingProps) {
+export function CreateListing({ onBack, onViewListing }: CreateListingProps) {
   const { state } = useApp();
+  const { showToast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [showEstimateModal, setShowEstimateModal] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [estimatedPrice, setEstimatedPrice] = useState<number | null>(null);
+  const [finalPrice, setFinalPrice] = useState<number | null>(null);
+  const [newListingId, setNewListingId] = useState<string | null>(null);
+  const [similarListings, setSimilarListings] = useState<Listing[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [newListingData, setNewListingData] = useState<any>(null);
   
   React.useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
@@ -66,6 +74,10 @@ export function CreateListing({ onBack }: CreateListingProps) {
     { value: 'studio', label: 'Studio' },
     { value: 'townhouse', label: 'Townhouse' },
     { value: 'penthouse', label: 'Penthouse' },
+    { value: 'duplex', label: 'Duplex' },
+    { value: 'chalet', label: 'Chalet' },
+    { value: 'twin_house', label: 'Twin House' },
+    { value: 'standalone_villa', label: 'Standalone Villa' },
   ];
 
   const completionStatuses = [
@@ -79,31 +91,91 @@ export function CreateListing({ onBack }: CreateListingProps) {
   };
 
   const handleSubmit = () => {
-    // Create new listing
-    const newListing: Listing = {
-      id: Date.now().toString(),
-      property_type: formData.property_type as any,
-      city: formData.city,
-      town: formData.town,
-      district_compound: formData.district_compound,
-      price: formData.price ? Number(formData.price) : undefined,
-      estimated_price: estimatedPrice || undefined,
-      bedrooms: formData.bedrooms,
-      bathrooms: formData.bathrooms,
-      size: formData.size,
-      lat: formData.lat,
-      lon: formData.lon,
-      created_at: new Date().toISOString(),
-      images: formData.images.length > 0 ? formData.images : [],
-      furnished: formData.furnished,
-      offering_type: formData.offering_type as any,
-      completion_status: formData.completion_status as any,
-      down_payment: formData.down_payment ? Number(formData.down_payment) : undefined,
+    const submitListing = async () => {
+      try {
+        setSubmitting(true);
+        
+        // Map completion status to API format
+        const completionStatusMap = {
+          ready: 'Completed',
+          under_construction: 'Under Construction',
+          off_plan: 'Off Plan',
+        };
+        
+        // Map offering type to API format
+        const offeringTypeMap = {
+          sale: 'Sale',
+          rent: 'Rent',
+        };
+        
+        const response = await createListing({
+          property_type: formData.property_type.charAt(0).toUpperCase() + formData.property_type.slice(1), // "Apartment", "Villa", etc.
+          city: formData.city,
+          town: formData.town,
+          district_compound: formData.district_compound,
+          completion_status: completionStatusMap[formData.completion_status as keyof typeof completionStatusMap], // "Completed", "Under Construction", "Off Plan"
+          offering_type: offeringTypeMap[formData.offering_type as keyof typeof offeringTypeMap], // "Sale", "Rent"
+          furnished: formData.furnished ? 'Yes' : 'No',
+          lat: formData.lat,
+          lon: formData.lon,
+          bedrooms: formData.bedrooms,
+          bathrooms: formData.bathrooms,
+          size: formData.size,
+          down_payment_price: formData.down_payment ? Number(formData.down_payment) : 0,
+          price: formData.price ? Number(formData.price) : undefined,
+        });
+        
+        setNewListingId(response.id);
+        setEstimatedPrice(response.estimated_price_egp);
+        setFinalPrice(response.final_price_saved);
+        setIsSubmitted(true);
+        
+        // Store the complete listing data for viewing
+        const completeListing = {
+          id: response.id,
+          property_type: formData.property_type,
+          city: formData.city,
+          town: formData.town,
+          district_compound: formData.district_compound,
+          completion_status: formData.completion_status,
+          offering_type: formData.offering_type,
+          furnished: formData.furnished,
+          lat: formData.lat,
+          lon: formData.lon,
+          bedrooms: formData.bedrooms,
+          bathrooms: formData.bathrooms,
+          size: formData.size,
+          down_payment: formData.down_payment ? Number(formData.down_payment) : undefined,
+          price: response.final_price_saved,
+          estimated_price: response.estimated_price_egp,
+          images: formData.images,
+          verified: false,
+        };
+        
+        // Store for potential viewing
+        setNewListingData(completeListing);
+        
+        // Load similar listings
+        try {
+          const similar = await getRecommendationsByPropertyLive(response.id, 6);
+          setSimilarListings(similar);
+        } catch (error) {
+          console.error('Failed to load similar listings:', error);
+        }
+        
+      } catch (error) {
+        console.error('Failed to create listing:', error);
+        showToast({
+          type: 'error',
+          title: 'Failed to create listing via API',
+          message: error instanceof Error ? error.message : 'Please try again later',
+        });
+      } finally {
+        setSubmitting(false);
+      }
     };
 
-    // Add to mock listings (in real app, this would be an API call)
-    mockListings.unshift(newListing);
-    setIsSubmitted(true);
+    submitListing();
   };
 
   const renderStepContent = () => {
@@ -391,6 +463,29 @@ export function CreateListing({ onBack }: CreateListingProps) {
     }
   };
 
+  // Function to check if user can navigate to a specific step
+  const canNavigateToStep = (targetStep: number) => {
+    // Always allow navigation to current step or backward to previous steps
+    if (targetStep <= currentStep) {
+      return true;
+    }
+    
+    // For forward navigation, check if all previous steps are complete
+    for (let i = currentStep; i < targetStep; i++) {
+      if (!isStepComplete(i)) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  const handleStepClick = (targetStep: number) => {
+    if (canNavigateToStep(targetStep)) {
+      setCurrentStep(targetStep);
+    }
+  };
+
   // Validation function to check if current step is complete
   const isStepComplete = (step: number) => {
     switch (step) {
@@ -419,21 +514,51 @@ export function CreateListing({ onBack }: CreateListingProps) {
           <h2 className="text-h1 font-bold text-light-text dark:text-dark-text mb-4">
             Listing Created Successfully!
           </h2>
-          {estimatedPrice && (
+          {finalPrice && (
             <div className="bg-light-primary-200 dark:bg-dark-surface p-4 rounded-aqar mb-6">
               <p className="text-light-text dark:text-dark-text">
-                Estimated Value: <span className="font-bold text-light-primary dark:text-dark-text">
-                  {estimatedPrice.toLocaleString()} EGP
+                Final Price: <span className="font-bold text-light-primary dark:text-dark-text">
+                  {finalPrice.toLocaleString()} EGP
                 </span>
               </p>
+              {estimatedPrice && estimatedPrice !== finalPrice && (
+                <p className="text-sm text-light-text/70 dark:text-dark-muted mt-1">
+                  Estimated: {estimatedPrice.toLocaleString()} EGP
+                </p>
+              )}
             </div>
           )}
           <div className="space-y-3">
-            <Button onClick={onBack} className="w-full">
-              View Listing
-            </Button>
+            {newListingId && (
+              <Button onClick={() => onViewListing?.(newListingId, newListingData)} className="w-full">
+                View Listing
+              </Button>
+            )}
+            {similarListings.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-semibold text-light-text dark:text-dark-text text-center">
+                  Similar Properties
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {similarListings.slice(0, 4).map((listing) => (
+                    <button
+                      key={listing.id}
+                      onClick={() => onViewListing(listing.id)}
+                      className="p-3 bg-light-primary-200 dark:bg-dark-surface rounded-aqar text-left hover:bg-light-primary-400 dark:hover:bg-dark-muted transition-colors"
+                    >
+                      <p className="font-medium text-sm text-light-text dark:text-dark-text">
+                        {listing.property_type} in {listing.city}
+                      </p>
+                      <p className="text-xs text-light-text/70 dark:text-dark-muted">
+                        {listing.price?.toLocaleString()} EGP
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <Button variant="outline" onClick={onBack} className="w-full">
-              See Similar Properties
+              Back to Home
             </Button>
           </div>
         </Card>
@@ -469,12 +594,15 @@ export function CreateListing({ onBack }: CreateListingProps) {
                 className={`flex items-center ${index < steps.length - 1 ? 'flex-1' : ''}`}
               >
                 <button
-                  onClick={() => setCurrentStep(index)}
+                  onClick={() => handleStepClick(index)}
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all hover:scale-105 ${
-                    index <= currentStep
+                    index === currentStep
                       ? 'bg-light-primary dark:bg-dark-primary text-white hover:bg-light-primary/90 dark:hover:bg-dark-primary/90'
-                      : 'bg-light-border dark:bg-dark-muted text-light-text/50 dark:text-dark-muted hover:bg-light-primary/20 dark:hover:bg-dark-primary/20'
+                      : canNavigateToStep(index)
+                        ? 'bg-light-border dark:bg-dark-muted text-light-text/50 dark:text-dark-muted hover:bg-light-primary/20 dark:hover:bg-dark-primary/20 cursor-pointer'
+                        : 'bg-light-border dark:bg-dark-muted text-light-text/30 dark:text-dark-muted/50 cursor-not-allowed opacity-50'
                   }`}
+                  disabled={!canNavigateToStep(index)}
                 >
                   {index + 1}
                 </button>
@@ -523,10 +651,11 @@ export function CreateListing({ onBack }: CreateListingProps) {
           ) : (
             <Button
               onClick={handleSubmit}
+              disabled={submitting}
               disabled={!isStepComplete(currentStep)}
               className="flex-1"
             >
-              {t('submit', state.language)}
+              {submitting ? 'Creating...' : t('submit', state.language)}
             </Button>
           )}
         </div>
