@@ -5,7 +5,7 @@ import { ListingCard } from '../listing/ListingCard';
 import { EmptyState } from '../ui/EmptyState';
 import { useApp } from '../../contexts/AppContext';
 import { t } from '../../utils/translations';
-import { getListing } from '../../services/listingService';
+import { getListing, getRecommendationsByPropertyLive } from '../../services/listingService';
 import { useToast } from '../ui/Toast';
 import { Listing } from '../../types';
 
@@ -22,44 +22,51 @@ export function SavedTab({ onViewListing }: SavedTabProps) {
   const [savedListings, setSavedListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load saved listings from API
-  React.useEffect(() => {
-    loadSavedListings();
-  }, [state.savedListings]);
+  const [moreLikeYourSaves, setMoreLikeYourSaves] = useState<Listing[]>([]);
+  const [loadingRecs, setLoadingRecs] = useState(true);
+
+  React.useEffect(() => { loadSavedListings(); }, [state.savedListings]);
 
   const loadSavedListings = async () => {
     if (state.savedListings.length === 0) {
       setSavedListings([]);
+      setMoreLikeYourSaves([]);
       setLoading(false);
+      setLoadingRecs(false);
       return;
     }
-
     try {
       setLoading(true);
       const results = await Promise.all(
         state.savedListings.map(async (id) => {
-          try {
-            return await getListing(id);
-          } catch (e: any) {
-            // 404 => drop the stale mock id
-            if (e?.status === 404) return null;
-            // Any other error — log and skip, do not break the whole page
-            console.warn("Saved getListing failed", id, e);
-            return null;
-          }
+          try { return await getListing(id); }
+          catch (e: any) { if (e?.status === 404) return null; console.warn("Saved getListing failed", id, e); return null; }
         })
       );
-      setSavedListings(results.filter(Boolean) as Listing[]);
+      const valid = results.filter(Boolean) as Listing[];
+      setSavedListings(valid);
     } catch (error) {
       console.error('Failed to load saved listings:', error);
-      showToast({
-        type: 'error',
-        title: 'Failed to load some saved listings',
-        message: error instanceof Error ? error.message : 'Please try again later',
-      });
+      showToast({ type: 'error', title: 'Failed to load some saved listings', message: error instanceof Error ? error.message : 'Please try again later' });
       setSavedListings([]);
     } finally {
       setLoading(false);
+    }
+
+    // Load “more like your saves”
+    try {
+      setLoadingRecs(true);
+      const seeds = state.savedListings.slice(0, 4);
+      const all: Listing[] = [];
+      for (const seed of seeds) {
+        const sims = await getRecommendationsByPropertyLive(seed, 6);
+        all.push(...sims);
+      }
+      const seen = new Set<string>();
+      const deduped = all.filter(x => !seen.has(String(x.id)) && seen.add(String(x.id)));
+      setMoreLikeYourSaves(deduped.slice(0, 24));
+    } finally {
+      setLoadingRecs(false);
     }
   };
 
@@ -69,13 +76,8 @@ export function SavedTab({ onViewListing }: SavedTabProps) {
   };
 
   const handleSelectAll = () => {
-    if (selectedItems.length === savedListings.length) {
-      // If all are selected, deselect all
-      setSelectedItems([]);
-    } else {
-      // Select all listings
-      setSelectedItems(savedListings.map(listing => listing.id));
-    }
+    if (selectedItems.length === savedListings.length) setSelectedItems([]);
+    else setSelectedItems(savedListings.map(l => l.id));
   };
 
   const viewOptions = [
@@ -86,11 +88,7 @@ export function SavedTab({ onViewListing }: SavedTabProps) {
   ];
 
   const toggleSelection = (listingId: string) => {
-    setSelectedItems(prev => 
-      prev.includes(listingId)
-        ? prev.filter(id => id !== listingId)
-        : [...prev, listingId]
-    );
+    setSelectedItems(prev => prev.includes(listingId) ? prev.filter(id => id !== listingId) : [...prev, listingId]);
   };
 
   if (loading) {
@@ -125,12 +123,30 @@ export function SavedTab({ onViewListing }: SavedTabProps) {
 
   return (
     <div className="px-4 py-6 space-y-6">
+      {/* More like your saves */}
+      <div>
+        <h3 className="text-h2 font-semibold text-light-text dark:text-dark-text mb-2">More like your saves</h3>
+        {loadingRecs ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[...Array(8)].map((_, i) => <div key={i} className="h-40 bg-gray-200 rounded animate-pulse" />)}
+          </div>
+        ) : moreLikeYourSaves.length === 0 ? (
+          <p className="text-sm text-light-text/70 dark:text-dark-muted">Save a few properties to see personalized picks here.</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {moreLikeYourSaves.slice(0, 8).map(l => (
+              <ListingCard key={l.id} listing={l} onClick={() => onViewListing(l.id)} variant="small" />
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-h1 font-bold text-light-text dark:text-dark-text">
           {t('saved', state.language)} ({savedListings.length})
         </h2>
-        
+
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
           {selectedItems.length > 0 && (
             <>
@@ -140,10 +156,7 @@ export function SavedTab({ onViewListing }: SavedTabProps) {
                 onClick={handleSelectAll}
                 className="text-light-primary border-light-primary hover:bg-light-primary hover:text-white dark:text-dark-text dark:border-dark-primary dark:hover:bg-dark-primary"
               >
-                {selectedItems.length === savedListings.length ? 
-                  (state.language === 'ar' ? 'إلغاء تحديد الكل' : 'Deselect All') : 
-                  t('selectAll', state.language)
-                }
+                {selectedItems.length === savedListings.length ? (state.language === 'ar' ? 'إلغاء تحديد الكل' : 'Deselect All') : t('selectAll', state.language)}
               </Button>
               <Button
                 variant="outline"
@@ -156,7 +169,7 @@ export function SavedTab({ onViewListing }: SavedTabProps) {
               </Button>
             </>
           )}
-          
+
           {selectedItems.length === 0 && savedListings.length > 0 && (
             <Button
               variant="outline"
@@ -167,7 +180,7 @@ export function SavedTab({ onViewListing }: SavedTabProps) {
               {t('selectAll', state.language)}
             </Button>
           )}
-          
+
           <div className="flex bg-light-primary-200 dark:bg-dark-surface rounded-aqar p-1">
             {viewOptions.map(({ mode, icon: Icon }) => (
               <button
@@ -199,16 +212,10 @@ export function SavedTab({ onViewListing }: SavedTabProps) {
                   : 'bg-white/80 border-light-border hover:border-light-primary'
               }`}
             >
-              {selectedItems.includes(listing.id) && (
-                <div className="w-3 h-3 bg-white rounded-full" />
-              )}
+              {selectedItems.includes(listing.id) && <div className="w-3 h-3 bg-white rounded-full" />}
             </button>
-            
-            <ListingCard
-              listing={listing}
-              onClick={() => onViewListing(listing.id)}
-              variant={viewMode}
-            />
+
+            <ListingCard listing={listing} onClick={() => onViewListing(listing.id)} variant={viewMode} />
           </div>
         ))}
       </div>
