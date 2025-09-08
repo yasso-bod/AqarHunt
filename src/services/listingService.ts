@@ -142,7 +142,7 @@ export async function searchListings(
 }
 
 export async function getListing(id: string): Promise<Listing> {
-  return api.get<Listing>(/listings/${encodeURIComponent(id)});
+  return api.get<Listing>(`/listings/${encodeURIComponent(id)}`);
 }
 
 export async function getRecommendationsByPropertyLive(
