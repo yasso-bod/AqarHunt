@@ -5,9 +5,13 @@ import { ListingCard } from '../listing/ListingCard';
 import { EstimateModal } from '../modals/EstimateModal';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
+import { LoadingSkeleton } from '../ui/LoadingSkeleton';
+import { useToast } from '../ui/Toast';
 import { useApp } from '../../contexts/AppContext';
 import { t } from '../../utils/translations';
-import { mockListings } from '../../data/mockListings';
+import { searchListings } from '../../services/listingService';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
+import { Listing } from '../../types';
 
 interface HomeTabProps {
   onViewListing: (listingId: string) => void;
@@ -17,17 +21,70 @@ interface HomeTabProps {
 
 export function HomeTab({ onViewListing, onCreateListing, onNavigateToSearch }: HomeTabProps) {
   const { state, setSearchFilters } = useApp();
+  const { showToast } = useToast();
   const [showEstimateModal, setShowEstimateModal] = useState(false);
   const [viewMode, setViewMode] = useState<'large' | 'medium' | 'small'>('medium');
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
 
   const quickFilters = [
-    { label: t('apartments', state.language), filter: { property_type: 'apartment' } },
-    { label: t('villas', state.language), filter: { property_type: 'villa' } },
-    { label: t('studios', state.language), filter: { property_type: 'studio' } },
+    { label: t('apartments', state.language), filter: { property_type: 'Apartment' } },
+    { label: t('villas', state.language), filter: { property_type: 'Villa' } },
+    { label: t('studios', state.language), filter: { property_type: 'Studio' } },
     { label: t('cairo', state.language), filter: { city: 'Cairo' } },
     { label: t('giza', state.language), filter: { city: 'Giza' } },
   ];
 
+  // Load initial listings
+  React.useEffect(() => {
+    loadListings(true);
+  }, []);
+
+  const loadListings = async (reset = false) => {
+    try {
+      if (reset) {
+        setLoading(true);
+        setPage(1);
+      }
+
+      const currentPage = reset ? 1 : page;
+      const response = await searchListings({}, currentPage, 30);
+      
+      if (reset) {
+        setListings(response.items);
+      } else {
+        setListings(prev => [...prev, ...response.items]);
+      }
+      
+      setHasMore(response.items.length >= 30);
+      if (!reset) {
+        setPage(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('Failed to load listings:', error);
+      showToast({
+        type: 'error',
+        title: 'Failed to load listings from API',
+        message: error instanceof Error ? error.message : 'Please try again later',
+      });
+      setListings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Infinite scroll
+  const [sentinelRef, isFetching, setIsFetchingMore] = useInfiniteScroll(
+    async () => {
+      if (hasMore && !loading) {
+        setIsFetchingMore(true);
+        await loadListings(false);
+        setIsFetchingMore(false);
+      }
+    }
+  );
   const handleQuickFilter = (filter: any) => {
     setSearchFilters(filter);
     // Navigate to search tab after applying filter
@@ -35,11 +92,11 @@ export function HomeTab({ onViewListing, onCreateListing, onNavigateToSearch }: 
   };
 
   const handleSearch = (query: string) => {
-    // This would normally trigger a search
-    console.log('Search query:', query);
+    // Search is now handled via the SearchBar component setting filters directly
+    onNavigateToSearch();
   };
 
-  const recentListings = mockListings.slice(0, 6);
+  const displayListings = listings.slice(0, 6);
 
   const viewOptions = [
     { mode: 'large' as const, icon: Grid2X2, cols: 'grid-cols-1 sm:grid-cols-2' },
@@ -125,16 +182,31 @@ export function HomeTab({ onViewListing, onCreateListing, onNavigateToSearch }: 
           </div>
         </div>
         
-        <div className={`grid gap-4 ${viewOptions.find(v => v.mode === viewMode)?.cols}`}>
-          {recentListings.map((listing) => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-              onClick={() => onViewListing(listing.id)}
-              variant={viewMode}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className={`grid gap-4 ${viewOptions.find(v => v.mode === viewMode)?.cols}`}>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white dark:bg-dark-surface rounded-aqar border border-light-border dark:border-dark-muted p-4 space-y-4">
+                <LoadingSkeleton variant="card" className="h-32" />
+                <div className="space-y-2">
+                  <LoadingSkeleton className="h-4 w-3/4" />
+                  <LoadingSkeleton className="h-4 w-1/2" />
+                  <LoadingSkeleton className="h-6 w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={`grid gap-4 ${viewOptions.find(v => v.mode === viewMode)?.cols}`}>
+            {displayListings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                onClick={() => onViewListing(listing.id)}
+                variant={viewMode}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Estimate Modal */}
@@ -143,6 +215,9 @@ export function HomeTab({ onViewListing, onCreateListing, onNavigateToSearch }: 
         onClose={() => setShowEstimateModal(false)}
         onContinueToListing={onCreateListing}
       />
+
+      {/* Infinite scroll sentinel */}
+      <div ref={sentinelRef} className="h-4" />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AppProvider } from './contexts/AppContext';
+import { ToastProvider } from './components/ui/Toast';
 import { Header } from './components/layout/Header';
 import { TabNavigation } from './components/layout/TabNavigation';
 import { HomeTab } from './components/tabs/HomeTab';
@@ -15,9 +16,11 @@ function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [currentView, setCurrentView] = useState<'tabs' | 'listing' | 'create'>('tabs');
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
+  const [initialListingData, setInitialListingData] = useState<any>(null);
 
-  const handleViewListing = (listingId: string) => {
+  const handleViewListing = (listingId: string, listingData?: any) => {
     setSelectedListingId(listingId);
+    setInitialListingData(listingData || null);
     setCurrentView('listing');
   };
 
@@ -28,27 +31,30 @@ function App() {
   const handleBackToTabs = () => {
     setCurrentView('tabs');
     setSelectedListingId(null);
+    setInitialListingData(null);
   };
 
   const handleLogoClick = () => {
     setCurrentView('tabs');
     setActiveTab('home');
     setSelectedListingId(null);
+    setInitialListingData(null);
   };
 
   const handleProfileClick = () => {
     setCurrentView('tabs');
     setActiveTab('profile');
     setSelectedListingId(null);
+    setInitialListingData(null);
   };
 
   const renderCurrentView = () => {
     if (currentView === 'listing' && selectedListingId) {
-      return <ListingDetails listingId={selectedListingId} onBack={handleBackToTabs} onViewListing={handleViewListing} />;
+      return <ListingDetails listingId={selectedListingId} initialListingData={initialListingData} onBack={handleBackToTabs} onViewListing={handleViewListing} />;
     }
     
     if (currentView === 'create') {
-      return <CreateListing onBack={handleBackToTabs} />;
+      return <CreateListing onBack={handleBackToTabs} onViewListing={handleViewListing} />;
     }
 
     return (
@@ -68,10 +74,12 @@ function App() {
 
   return (
     <AppProvider>
-      <div className="min-h-screen bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text">
-        {currentView === 'tabs' && <Header onProfileClick={handleProfileClick} onLogoClick={handleLogoClick} />}
-        {renderCurrentView()}
-      </div>
+      <ToastProvider>
+        <div className="min-h-screen bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text">
+          {currentView === 'tabs' && <Header onProfileClick={handleProfileClick} onLogoClick={handleLogoClick} />}
+          {renderCurrentView()}
+        </div>
+      </ToastProvider>
     </AppProvider>
   );
 }

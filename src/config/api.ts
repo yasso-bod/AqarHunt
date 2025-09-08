@@ -1,13 +1,14 @@
-// API Configuration - to be updated when backend is ready
-export const API_BASE_URL = process.env.VITE_API_BASE_URL || '';
-export const API_KEY = process.env.VITE_API_KEY || '';
+// API Configuration
+export const API_BASE_URL = 'https://06f1bdb0b04b.ngrok-free.app';
+export const API_KEY = 'secret123';
 
-// Mock API endpoints for future integration
+// API endpoints
 export const API_ENDPOINTS = {
   health: '/health',
   search: '/search',
   suggest: '/suggest',
   suggestFuzzy: '/suggest_fuzzy',
+  listing: (id: string | number) => `/listings/${id}`,
   predictPrice: '/predict_price',
   predictPriceBatch: '/predict_price/batch',
   createListing: '/listings/create',
@@ -17,3 +18,19 @@ export const API_ENDPOINTS = {
   recommendWithinFilters: '/recommend/within_filters',
   recommendWithinFiltersLive: '/recommend/within_filters_live',
 } as const;
+
+// Request timeout in milliseconds
+export const REQUEST_TIMEOUT = 30000;
+
+export const RETRY_CONFIG = {
+  maxRetries: 2,
+  baseDelay: 1000, // 1 second
+  maxDelay: 5000,  // 5 seconds
+};
+
+// Optional: keep history but DON'T export it
+const _PREVIOUS_API_BASE_URLS = [
+  'http://localhost:8000', // Local development
+  'http://127.0.0.1:8000', // Alternative local
+  'https://06f1bdb0b04b.ngrok-free.app', // Previous ngrok URL (may be expired)
+];
