@@ -12,7 +12,7 @@ export const API_ENDPOINTS = {
   search: '/search',
   suggest: '/suggest',
   suggestFuzzy: '/suggest_fuzzy',
-  listing: (id: string | number) => /listings/${id},
+  listing: (id: string | number) => `/listings/${id}`,
   predictPrice: '/predict_price',
   predictPriceBatch: '/predict_price/batch',
   createListing: '/listings/create',
@@ -30,5 +30,5 @@ export const REQUEST_TIMEOUT = 30000;
 export const RETRY_CONFIG = {
   maxRetries: 2,
   baseDelay: 1000,
-  maxDelay: 5000,
+  maxDelay: 5000,
 };
