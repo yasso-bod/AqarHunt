@@ -463,6 +463,19 @@ export function CreateListing({ onBack, onViewListing }: CreateListingProps) {
     }
   };
 
+  const propertyTypes = [
+  { value: 'Apartment', label: t('apartment', state.language) },
+  { value: 'Villa', label: t('villa', state.language) },
+  { value: 'Penthouse', label: t('penthouse', state.language) },
+  { value: 'Chalet', label: t('chalet', state.language) },
+  { value: 'Studio', label: t('studio', state.language) },
+  { value: 'Duplex', label: t('duplex', state.language) },
+  { value: 'Townhouse', label: t('townhouse', state.language) },
+  { value: 'Twin House', label: t('twin_house', state.language) },
+  { value: 'Standalone Villa', label: t('standalone_villa', state.language) },
+];
+
+
   // Function to check if user can navigate to a specific step
   const canNavigateToStep = (targetStep: number) => {
     // Always allow navigation to current step or backward to previous steps
