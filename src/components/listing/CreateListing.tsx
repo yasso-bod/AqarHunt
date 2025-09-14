@@ -475,6 +475,16 @@ export function CreateListing({ onBack, onViewListing }: CreateListingProps) {
   { value: 'Standalone Villa', label: t('standalone_villa', state.language) },
 ];
 
+  <select
+  value={form.property_type}
+  onChange={(e) => setForm(prev => ({ ...prev, property_type: e.target.value }))}
+  className="w-full px-4 py-3 ..."
+>
+  {propertyTypes.map(opt => (
+    <option key={opt.value} value={opt.value}>{opt.label}</option>
+  ))}
+</select>
+
 
   // Function to check if user can navigate to a specific step
   const canNavigateToStep = (targetStep: number) => {
