@@ -68,17 +68,18 @@ export function CreateListing({ onBack, onViewListing }: CreateListingProps) {
     { id: 'photos', title: t('photos', state.language) },
   ];
 
-  const propertyTypes = [
-    { value: 'apartment', label: 'Apartment' },
-    { value: 'villa', label: 'Villa' },
-    { value: 'studio', label: 'Studio' },
-    { value: 'townhouse', label: 'Townhouse' },
-    { value: 'penthouse', label: 'Penthouse' },
-    { value: 'duplex', label: 'Duplex' },
-    { value: 'chalet', label: 'Chalet' },
-    { value: 'twin_house', label: 'Twin House' },
-    { value: 'standalone_villa', label: 'Standalone Villa' },
-  ];
+const propertyTypes = [
+  { value: 'Apartment', label: t('apartment', state.language) },
+  { value: 'Villa', label: t('villa', state.language) },
+  { value: 'Penthouse', label: t('penthouse', state.language) },
+  { value: 'Chalet', label: t('chalet', state.language) },
+  { value: 'Studio', label: t('studio', state.language) },
+  { value: 'Duplex', label: t('duplex', state.language) },
+  { value: 'Townhouse', label: t('townhouse', state.language) },
+  { value: 'Twin House', label: t('twin_house', state.language) },
+  { value: 'Standalone Villa', label: t('standalone_villa', state.language) },
+];
+
 
   const completionStatuses = [
     { value: 'ready', label: t('ready', state.language) },
@@ -463,17 +464,17 @@ export function CreateListing({ onBack, onViewListing }: CreateListingProps) {
     }
   };
 
-  const propertyTypes = [
-  { value: 'Apartment', label: t('apartment', state.language) },
-  { value: 'Villa', label: t('villa', state.language) },
-  { value: 'Penthouse', label: t('penthouse', state.language) },
-  { value: 'Chalet', label: t('chalet', state.language) },
-  { value: 'Studio', label: t('studio', state.language) },
-  { value: 'Duplex', label: t('duplex', state.language) },
-  { value: 'Townhouse', label: t('townhouse', state.language) },
-  { value: 'Twin House', label: t('twin_house', state.language) },
-  { value: 'Standalone Villa', label: t('standalone_villa', state.language) },
-];
+//   const propertyTypes = [
+//   { value: 'Apartment', label: t('apartment', state.language) },
+//   { value: 'Villa', label: t('villa', state.language) },
+//   { value: 'Penthouse', label: t('penthouse', state.language) },
+//   { value: 'Chalet', label: t('chalet', state.language) },
+//   { value: 'Studio', label: t('studio', state.language) },
+//   { value: 'Duplex', label: t('duplex', state.language) },
+//   { value: 'Townhouse', label: t('townhouse', state.language) },
+//   { value: 'Twin House', label: t('twin_house', state.language) },
+//   { value: 'Standalone Villa', label: t('standalone_villa', state.language) },
+// ];
 
   <select
   value={form.property_type}
