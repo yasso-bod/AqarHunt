@@ -238,6 +238,29 @@ By using AqarHunt, you agree not to misuse the service or the underlying data, a
     chalet: 'شاليه',
     twin_house: 'توين هاوس',
     standalone_villa: 'فيلا منفصلة',
+
+    // Property types
+    apartment: 'Apartment',
+    villa: 'Villa',
+    penthouse: 'Penthouse',
+    chalet: 'Chalet',
+    studio: 'Studio',
+    duplex: 'Duplex',
+    townhouse: 'Townhouse',
+    twin_house: 'Twin House',
+    standalone_villa: 'Standalone Villa',
+
+    // Property types
+    apartment: 'شقة',
+    villa: 'فيلا',
+    penthouse: 'بنتهاوس',
+    chalet: 'شاليه',
+    studio: 'استوديو',
+    duplex: 'دوبلكس',
+    townhouse: 'تاون هاوس',
+    twin_house: 'توين هاوس',
+    standalone_villa: 'فيلا مستقلة',
+
     
     // Listing Details
     verified: 'موثق',
