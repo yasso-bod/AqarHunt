@@ -10,12 +10,15 @@ import { getListing, getRecommendationsByPropertyLive } from '../../services/lis
 import { useToast } from '../ui/Toast';
 import { cn } from '../../utils/cn';
 import { Listing } from '../../types';
-import { logView } from '../../utils/interactionStore';
 
 // Helper function to normalize property type display
 function normalizePropertyType(propertyType: string): string {
   if (!propertyType) return 'apartment';
+  
+  // Convert to lowercase for consistent comparison
   const normalized = propertyType.toLowerCase().trim();
+  
+  // Handle various API response formats
   const typeMap: { [key: string]: string } = {
     'apartment': 'apartment',
     'villa': 'villa',
@@ -24,20 +27,29 @@ function normalizePropertyType(propertyType: string): string {
     'penthouse': 'penthouse',
     'duplex': 'duplex',
     'chalet': 'chalet',
-    'twin_house': 'townhouse',
+    'twin_house': 'townhouse', // Map twin_house to townhouse for display
     'twin house': 'townhouse',
-    'standalone_villa': 'villa',
+    'standalone_villa': 'villa', // Map standalone_villa to villa for display
     'standalone villa': 'villa',
+    // Handle potential API variations
     'pent house': 'penthouse',
     'town house': 'townhouse',
   };
+  
   return typeMap[normalized] || normalized;
 }
 
 // Helper function to translate city names
-const translateCity = (city: string, _language: string) => city;
+const translateCity = (city: string, language: string) => {
+  // Revert to English for all locations until proper Arabic localization is implemented
+  return city;
+};
+
 // Helper function to translate town/area names
-const translateTown = (town: string, _language: string) => town;
+const translateTown = (town: string, language: string) => {
+  // Revert to English for all locations until proper Arabic localization is implemented
+  return town;
+};
 
 interface ListingDetailsProps {
   listingId: string;
@@ -55,68 +67,171 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
   const [similarListings, setSimilarListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(!initialListingData);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
-
+  const [similarPropertiesRequested, setSimilarPropertiesRequested] = useState(false);
+  
   const isSaved = listing ? state.savedListings.includes(listing.id) : false;
-
+  
   React.useEffect(() => {
-    const handleEscKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onBack(); };
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onBack();
+      }
+    };
+
     document.addEventListener('keydown', handleEscKey);
-    return () => { document.removeEventListener('keydown', handleEscKey); };
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
   }, [onBack]);
 
-  // Load listing details (and log view)
+  // Load listing details
   React.useEffect(() => {
-    let mounted = true;
-    if (initialListingData) {
-      setListing(initialListingData);
-      logView(String(initialListingData.id));
-      return;
+    if (!initialListingData) {
+      loadListing();
     }
-    (async () => {
-      try {
-        setLoading(true);
-        const listingData = await getListing(listingId);
-        if (!mounted) return;
-        setListing(listingData);
-        logView(String(listingData.id));
-      } catch (error) {
-        console.error('Failed to load listing:', error);
-        showToast({
-          type: 'error',
-          title: 'Listing not found',
-          message: error instanceof Error ? error.message : 'Please try again later',
-        });
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => { mounted = false; };
-  }, [listingId, initialListingData, showToast]);
+  }, [listingId]);
 
-  // Auto-load similar properties when listing is ready
+  // Load similar listings when listing is loaded
   React.useEffect(() => {
-    let mounted = true;
-    if (!listing) return;
-    (async () => {
-      try {
-        setLoadingSimilar(true);
-        const similar = await getRecommendationsByPropertyLive(listing.id, 6);
-        if (!mounted) return;
-        setSimilarListings(similar);
-      } catch (error) {
-        console.error('Failed to load similar properties:', error);
-        showToast({
-          type: 'error',
-          title: 'Failed to load similar properties',
-          message: error instanceof Error ? error.message : 'Please try again later',
+    if (listing && !similarPropertiesRequested) {
+      // Don't auto-load similar listings anymore
+      // They will be loaded when user clicks the button
+    }
+  }, [listing, similarPropertiesRequested]);
+
+  // Manual similar properties loading function
+  const handleLoadSimilarProperties = async () => {
+    if (!listing || loadingSimilar) return;
+    
+    try {
+      setLoadingSimilar(true);
+      setSimilarPropertiesRequested(true);
+      
+      console.log('=== LOADING SIMILAR PROPERTIES ===');
+      console.log('Current listing:', {
+        id: listing.id,
+        property_type: listing.property_type,
+        city: listing.city,
+        bedrooms: listing.bedrooms,
+        size: listing.size
+      });
+      
+      // Use the improved recommendations service
+      const similarProperties = await getRecommendationsByPropertyLive(listing.id, 6);
+      
+      console.log('Similar properties loaded:', similarProperties.length);
+      if (similarProperties.length > 0) {
+        console.log('Sample similar property:', {
+          id: similarProperties[0].id,
+          property_type: similarProperties[0].property_type,
+          bedrooms: similarProperties[0].bedrooms,
+          size: similarProperties[0].size,
+          price: similarProperties[0].price
         });
-        setSimilarListings([]);
-      } finally {
-        if (mounted) setLoadingSimilar(false);
       }
-    })();
-    return () => { mounted = false; };
-  }, [listing, showToast]);
+      
+      setSimilarListings(similarProperties);
+      
+      if (similarProperties.length === 0) {
+        showToast({
+          type: 'info',
+          title: 'No similar properties found',
+          message: 'We couldn\'t find properties similar to this one at the moment.',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load similar properties:', error);
+      showToast({
+        type: 'error',
+        title: 'Failed to load similar properties',
+        message: error instanceof Error ? error.message : 'Please try again later',
+      });
+      setSimilarListings([]);
+    } finally {
+      setLoadingSimilar(false);
+    }
+  };
+
+  const loadListing = async () => {
+    if (initialListingData) return;
+    
+    try {
+      setLoading(true);
+      const listingData = await getListing(listingId);
+      setListing(listingData);
+    } catch (error) {
+      console.error('Failed to load listing:', error);
+      showToast({
+        type: 'error',
+        title: 'Listing not found',
+        message: error instanceof Error ? error.message : 'Please try again later',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSimilarListings = async () => {
+    if (!listing) return;
+    
+    try {
+      console.log('Loading similar properties for listing:', listing.id);
+      
+      // First try the live recommendations API
+      const recResponse = await api.recLive({ property_id: listing.id, top_k: 10 });
+      console.log('Recommendations API response:', recResponse);
+      
+      // Extract property IDs from recommendation response
+      const propertyIds = recResponse.items?.map((item: any) => String(item.property_id)) || [];
+      console.log('Property IDs from recommendations:', propertyIds);
+      
+      if (propertyIds.length === 0) {
+        console.log('No property IDs returned from recommendations API');
+        setSimilarListings([]);
+        showToast({
+          type: 'info',
+          title: 'No similar properties found',
+          message: 'We couldn\'t find properties similar to this one at the moment.',
+        });
+        return;
+      }
+      
+      // Fetch full listing details for each recommended property
+      console.log('Fetching details for recommended properties...');
+      const detailsPromises = propertyIds.slice(0, 6).map(async (id: string) => {
+        try {
+          console.log(`Fetching details for property ${id}`);
+          const propertyDetails = await getListing(id);
+          console.log(`Successfully loaded property ${id}:`, propertyDetails);
+          return propertyDetails;
+        } catch (error) {
+          console.warn(`Failed to load details for listing ${id}:`, error);
+          return null;
+        }
+      });
+      
+      const fullListings = await Promise.all(detailsPromises);
+      const validListings = fullListings.filter(Boolean) as Listing[];
+      
+      console.log('Valid similar listings loaded:', validListings.length);
+      console.log('Sample listing data:', validListings[0]);
+      
+      setSimilarListings(validListings);
+      
+      if (validListings.length === 0) {
+        showToast({
+          type: 'info',
+          title: 'No similar properties found',
+          message: 'We couldn\'t find properties similar to this one at the moment.',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load similar listings:', error);
+      // Re-throw to be handled by the calling function
+      throw error;
+    }
+  };
 
   if (loading) {
     return (
@@ -149,7 +264,8 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
       </div>
     );
   }
-
+  
+  // Get normalized property type for consistent display
   const normalizedPropertyType = normalizePropertyType(listing.property_type);
 
   const handleShare = () => {
@@ -171,12 +287,20 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
             <ArrowLeft className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
             Back
           </Button>
-
+          
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
-            <Button onClick={handleShare} variant="outline" size="sm">
+            <Button
+              onClick={handleShare}
+              variant="outline"
+              size="sm"
+            >
               <Share className="w-4 h-4" />
             </Button>
-            <Button onClick={() => toggleSavedListing(listing.id)} variant={isSaved ? 'primary' : 'outline'} size="sm">
+            <Button
+              onClick={() => toggleSavedListing(listing.id)}
+              variant={isSaved ? "primary" : "outline"}
+              size="sm"
+            >
               <Heart className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
             </Button>
           </div>
@@ -199,7 +323,7 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
               </span>
             </div>
           )}
-
+          
           {listing.images && listing.images.length > 1 && (
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 rtl:space-x-reverse">
               {listing.images.map((_, index) => (
@@ -228,7 +352,7 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
               </p>
             )}
           </div>
-
+          
           {listing.verified && (
             <div className="flex items-center space-x-2 rtl:space-x-reverse bg-light-info/20 text-light-info px-3 py-1 rounded-full">
               <ShieldCheck className="w-4 h-4" />
@@ -242,7 +366,7 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
           <h2 className="text-h2 font-semibold text-light-text dark:text-dark-text capitalize">
             {t(normalizedPropertyType, state.language)} in {listing.district_compound}
           </h2>
-
+          
           <div className="flex items-center text-light-text/70 dark:text-dark-muted">
             <MapPin className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
             <span>
@@ -294,15 +418,28 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
           </div>
         </Card>
 
-        {/* Actions (keep Estimate if needed; similar now loads automatically) */}
-        {!listing.price && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Button variant="gradient" onClick={() => setShowEstimateModal(true)}>
+        {/* Actions */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {!listing.price && (
+            <Button
+              variant="gradient"
+              onClick={() => setShowEstimateModal(true)}
+            >
               <WandSparkles className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
               {t('estimatePrice', state.language)}
             </Button>
-          </div>
-        )}
+          )}
+          
+          <Button 
+            variant="outline" 
+            onClick={handleLoadSimilarProperties}
+            disabled={loadingSimilar}
+            className={!listing.price ? "" : "col-span-full"}
+          >
+            <Stars className="w-4 h-4 mr-2 rtl:mr-0 rtl:ml-2" />
+            {loadingSimilar ? 'Loading...' : t('similarProperties', state.language)}
+          </Button>
+        </div>
 
         {/* Contact Seller */}
         <Card className="p-4">
@@ -321,45 +458,52 @@ export function ListingDetails({ listingId, initialListingData, onBack, onViewLi
           </div>
         </Card>
 
-        {/* Similar Properties (auto) */}
-        <div className="space-y-4">
-          <h3 className="text-h2 font-semibold text-light-text dark:text-dark-text">
-            {t('similarProperties', state.language)}
-            {loadingSimilar ? null : similarListings.length > 0 && (
-              <span className="text-sm font-normal text-light-text/70 dark:text-dark-muted ml-2">
-                ({similarListings.length} found)
-              </span>
-            )}
-          </h3>
-
-          {loadingSimilar ? (
-            <div className="flex justify-center py-8">
-              <div className="flex items-center space-x-2 rtl:space-x-reverse text-light-text/70 dark:text-dark-muted">
-                <div className="w-4 h-4 border-2 border-light-primary border-t-transparent rounded-full animate-spin" />
-                <span>Loading similar properties...</span>
+        {/* Similar Properties */}
+        {similarPropertiesRequested && (
+          <div className="space-y-4">
+            <h3 className="text-h2 font-semibold text-light-text dark:text-dark-text">
+              {t('similarProperties', state.language)}
+              {similarListings.length > 0 && (
+                <span className="text-sm font-normal text-light-text/70 dark:text-dark-muted ml-2">
+                  ({similarListings.length} found)
+                </span>
+              )}
+            </h3>
+            
+            {loadingSimilar ? (
+              <div className="flex justify-center py-8">
+                <div className="flex items-center space-x-2 rtl:space-x-reverse text-light-text/70 dark:text-dark-muted">
+                  <div className="w-4 h-4 border-2 border-light-primary border-t-transparent rounded-full animate-spin" />
+                  <span>Loading similar properties...</span>
+                </div>
               </div>
-            </div>
-          ) : similarListings.length > 0 ? (
-            <div className="space-y-4">
-              <RecommendationCarousel listings={similarListings} onViewListing={onViewListing} />
-              <div className="text-center">
-                <p className="text-sm text-light-text/70 dark:text-dark-muted">
-                  Showing properties similar to this {t(normalizePropertyType(listing.property_type), state.language)} in {listing.city}
+            ) : similarListings.length > 0 ? (
+              <div className="space-y-4">
+                <RecommendationCarousel
+                  listings={similarListings}
+                  onViewListing={onViewListing}
+                />
+                <div className="text-center">
+                  <p className="text-sm text-light-text/70 dark:text-dark-muted">
+                    Showing properties similar to this {t(normalizedPropertyType, state.language)} in {listing.city}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-4 text-light-primary-400 dark:text-dark-muted">
+                  <Stars className="w-full h-full" />
+                </div>
+                <p className="text-light-text/70 dark:text-dark-muted">
+                  No similar properties found at the moment.
+                </p>
+                <p className="text-sm text-light-text/50 dark:text-dark-muted/70 mt-2">
+                  Try viewing other properties or check back later.
                 </p>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto mb-4 text-light-primary-400 dark:text-dark-muted">
-                <Stars className="w-full h-full" />
-              </div>
-              <p className="text-light-text/70 dark:text-dark-muted">No similar properties found at the moment.</p>
-              <p className="text-sm text-light-text/50 dark:text-dark-muted/70 mt-2">
-                Try viewing other properties or check back later.
-              </p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Estimate Modal */}

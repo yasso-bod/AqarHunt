@@ -5,7 +5,8 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useApp } from '../../contexts/AppContext';
 import { t } from '../../utils/translations';
-import { generatePriceEstimate } from '../../utils/searchUtils';
+import { predictPrice } from '../../services/listingService';
+import { useToast } from '../ui/Toast';
 import { Listing } from '../../types';
 
 interface EstimateModalProps {
@@ -24,6 +25,7 @@ export function EstimateModal({
   initialData 
 }: EstimateModalProps) {
   const { state } = useApp();
+  const { showToast } = useToast();
   const [step, setStep] = useState<'form' | 'loading' | 'result'>('form');
   const [estimatedPrice, setEstimatedPrice] = useState<number | null>(null);
   
@@ -32,6 +34,7 @@ export function EstimateModal({
     town: initialData?.town || '',
     district_compound: initialData?.district_compound || '',
     property_type: initialData?.property_type || 'apartment',
+    offering_type: initialData?.offering_type || 'sale',
     bedrooms: initialData?.bedrooms || 2,
     bathrooms: initialData?.bathrooms || 1,
     size: initialData?.size || 100,
@@ -47,6 +50,7 @@ export function EstimateModal({
         town: initialData.town || '',
         district_compound: initialData.district_compound || '',
         property_type: initialData.property_type || 'apartment',
+        offering_type: initialData.offering_type || 'sale',
         bedrooms: initialData.bedrooms || 2,
         bathrooms: initialData.bathrooms || 1,
         size: initialData.size || 100,
@@ -59,13 +63,41 @@ export function EstimateModal({
   const handleSubmit = () => {
     setStep('loading');
     
-    // Simulate API call
-    setTimeout(() => {
-      const estimate = generatePriceEstimate(formData);
-      setEstimatedPrice(estimate);
-      setStep('result');
-      onEstimateComplete?.(estimate);
-    }, 2000);
+    // Call real API
+    const callPredictPrice = async () => {
+      try {
+        const response = await predictPrice({
+          city: formData.city,
+          town: formData.town,
+          district_compound: formData.district_compound,
+          district_compound: formData.district_compound,
+          property_type: formData.property_type,
+          furnishing: 'No', // Default value since furnished is not in the form
+          completion_status: 'Completed', // Map to API format
+          offering_type: formData.offering_type === 'sale' ? 'Sale' : 'Rent',
+          bedrooms: formData.bedrooms,
+          bathrooms: formData.bathrooms,
+          size: formData.size,
+          lat: formData.lat,
+          lon: formData.lon,
+          down_payment_price: 0,
+        });
+        
+        setEstimatedPrice(response.predicted_price_egp);
+        setStep('result');
+        onEstimateComplete?.(response.predicted_price_egp);
+      } catch (error) {
+        console.error('Failed to get price estimate:', error);
+        showToast({
+          type: 'error',
+          title: 'Failed to get price estimate from API',
+          message: error instanceof Error ? error.message : 'Please try again later',
+        });
+        setStep('form');
+      }
+    };
+    
+    callPredictPrice();
   };
 
   const handleClose = () => {
@@ -80,6 +112,10 @@ export function EstimateModal({
     { value: 'studio', label: 'Studio' },
     { value: 'townhouse', label: 'Townhouse' },
     { value: 'penthouse', label: 'Penthouse' },
+    { value: 'duplex', label: 'Duplex' },
+    { value: 'chalet', label: 'Chalet' },
+    { value: 'twin_house', label: 'Twin House' },
+    { value: 'standalone_villa', label: 'Standalone Villa' },
   ];
 
   return (
@@ -113,6 +149,13 @@ export function EstimateModal({
               placeholder="e.g., New Cairo"
             />
 
+            <Input
+              label={t('compound', state.language)}
+              value={formData.district_compound}
+              onChange={(e) => setFormData(prev => ({ ...prev, district_compound: e.target.value }))}
+              placeholder="e.g., Madinaty"
+            />
+
             <div>
               <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">
                 {t('propertyType', state.language)}
@@ -125,6 +168,20 @@ export function EstimateModal({
                 {propertyTypes.map(type => (
                   <option key={type.value} value={type.value}>{type.label}</option>
                 ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">
+                {t('offering', state.language)}
+              </label>
+              <select
+                value={formData.offering_type}
+                onChange={(e) => setFormData(prev => ({ ...prev, offering_type: e.target.value }))}
+                className="w-full px-4 py-3 bg-white dark:bg-dark-surface border border-light-border dark:border-dark-muted rounded-aqar text-light-text dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-light-primary"
+              >
+                <option value="sale">{t('sale', state.language)}</option>
+                <option value="rent">{t('rent', state.language)}</option>
               </select>
             </div>
 
@@ -166,7 +223,7 @@ export function EstimateModal({
 
       {step === 'loading' && (
         <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse-gentle">
+          <div className="w-16 h-16 bg-gradient-primary dark:bg-gradient-to-br dark:from-dark-primary dark:to-dark-accent rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse-gentle">
             <WandSparkles className="w-8 h-8 text-white" />
           </div>
           <h3 className="text-lg font-semibold text-light-text dark:text-dark-text mb-2">
